@@ -3,7 +3,5 @@ package initializers
 import "backend/models"
 
 func SyncDatabase() {
-	// Migrate the schema
-	DB.AutoMigrate(&models.User{})
-
+	DB.AutoMigrate(&models.User{}, &models.Course{}, &models.Teacher{}, &models.CourseTeacher{}, &models.CourseInscription{})
 }

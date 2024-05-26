@@ -4,6 +4,10 @@ import "gorm.io/gorm"
 
 type User struct {
 	gorm.Model
-	Email    string `gorm:"unique"`
-	Password string
+	Name               string `gorm:"not null"`
+	Surname            string `gorm:"not null"`
+	Email              string `gorm:"unique;not null"`
+	Password           string `gorm:"not null"`
+	UserType           string `gorm:"not null"` // Could be "admin" or "user"
+	CourseInscriptions []CourseInscription
 }
