@@ -44,7 +44,7 @@ func CreateCourse(c *gin.Context) {
 func AssociateTeacherCourse(c *gin.Context) {
 	var body struct {
 		TeacherID uint `json:"teacher_id"`
-		CursoID   uint `json:"curso_id"`
+		CourseID  uint `json:"course_id"`
 	}
 
 	if c.Bind(&body) != nil {
@@ -52,8 +52,8 @@ func AssociateTeacherCourse(c *gin.Context) {
 		return
 	}
 
-	var curso models.Course
-	if initializers.DB.First(&curso, body.CursoID).Error != nil {
+	var course models.Course
+	if initializers.DB.First(&course, body.CourseID).Error != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Course not found"})
 		return
 	}
@@ -64,10 +64,65 @@ func AssociateTeacherCourse(c *gin.Context) {
 		return
 	}
 
-	if initializers.DB.Model(&curso).Association("Teachers").Append(&teacher) != nil {
+	if initializers.DB.Model(&course).Association("Teachers").Append(&teacher) != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not associate the teacher to the course"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Teacher associated to the course successfully"})
+}
+
+func GetAllCourses(c *gin.Context) {
+	var courses []models.Course
+
+	// Utiliza Preload para cargar las asociaciones
+	result := initializers.DB.Preload("Teachers").Preload("Users").Find(&courses)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch courses"})
+		return
+	}
+
+	c.JSON(http.StatusOK, courses)
+}
+
+func GetCourseByID(c *gin.Context) {
+	id := c.Param("id")
+	var course models.Course
+
+	// Use preload to get the teachers and users
+	result := initializers.DB.Preload("Teachers").Preload("Users").First(&course, id)
+	if result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Course not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, course)
+}
+
+// returns the courses that a user is enrolled in
+func GetUserCourses(c *gin.Context) {
+	userID := c.Param("id")
+	var user models.User
+
+	// Find the user and preload the courses
+	if initializers.DB.Preload("Courses").First(&user, userID).Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"courses": user.Courses})
+}
+
+// returns the users that are enrolled in a course
+func GetCourseUsers(c *gin.Context) {
+	courseID := c.Param("course_id")
+	var course models.Course
+
+	// Find the course and preload the users
+	if initializers.DB.Preload("Users").First(&course, courseID).Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Course not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"users": course.Users})
 }

@@ -17,6 +17,9 @@ func Signup(c *gin.Context) {
 	var body struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
+		Name     string `json:"name"`
+		Surname  string `json:"surname"`
+		UserType string `json:"userType"`
 	}
 
 	if c.Bind(&body) != nil {
@@ -34,7 +37,7 @@ func Signup(c *gin.Context) {
 	}
 
 	// Create a new user
-	user := models.User{Email: body.Email, Password: string(hash)}
+	user := models.User{Email: body.Email, Password: string(hash), Name: body.Name, Surname: body.Surname, UserType: body.UserType}
 	result := initializers.DB.Create(&user)
 
 	if result.Error != nil {
@@ -102,4 +105,87 @@ func Validate(c *gin.Context) {
 	user, _ := c.Get("user")
 
 	c.JSON(http.StatusOK, gin.H{"message": user})
+}
+
+func GetAllUsers(c *gin.Context) {
+	var users []models.User
+	result := initializers.DB.Find(&users)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to find all users"})
+		return
+	}
+	c.JSON(http.StatusOK, users)
+}
+
+func GetUserByID(c *gin.Context) {
+	id := c.Param("id")
+	var user models.User
+	result := initializers.DB.First(&user, id)
+	if result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+	c.JSON(http.StatusOK, user)
+}
+
+func UpdateUserByID(c *gin.Context) {
+	id := c.Param("id")
+
+	var body struct {
+		Email    string `json:"email,omitempty"`
+		Password string `json:"password,omitempty"`
+		Name     string `json:"name,omitempty"`
+		Surname  string `json:"surname,omitempty"`
+		UserType string `json:"userType,omitempty"`
+	}
+
+	if c.Bind(&body) != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	var user models.User
+	result := initializers.DB.First(&user, id)
+	if result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	if body.Email != "" {
+		user.Email = body.Email
+	}
+	if body.Name != "" {
+		user.Name = body.Name
+	}
+	if body.Surname != "" {
+		user.Surname = body.Surname
+	}
+	if body.UserType != "" {
+		user.UserType = body.UserType
+	}
+
+	if body.Password != "" {
+		hash, err := bcrypt.GenerateFromPassword([]byte(body.Password), bcrypt.DefaultCost)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while hashing the password"})
+			return
+		}
+		user.Password = string(hash)
+	}
+
+	initializers.DB.Save(&user)
+
+	c.JSON(http.StatusOK, gin.H{"message": "User updated successfully"})
+}
+
+func DeleteUserByID(c *gin.Context) {
+	id := c.Param("id")
+	var user models.User
+	result := initializers.DB.First(&user, id)
+	if result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+	initializers.DB.Delete(&user)
+	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
 }

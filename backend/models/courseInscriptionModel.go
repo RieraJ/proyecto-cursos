@@ -1,12 +1,9 @@
 package models
 
-import "gorm.io/gorm"
+import "time"
 
 type CourseInscription struct {
-	gorm.Model
-	UserID          uint
-	CourseID        uint
-	InscriptionDate string `gorm:"type:date"`
-	User            User   `gorm:"foreignKey:UserID"`
-	Course          Course `gorm:"foreignKey:CourseID"`
+	UserID          uint      `gorm:"not null"`
+	CourseID        uint      `gorm:"not null"`
+	InscriptionDate time.Time `gorm:"not null"`
 }

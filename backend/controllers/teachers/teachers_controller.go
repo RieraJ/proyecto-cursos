@@ -10,7 +10,8 @@ import (
 
 func CreateTeacher(c *gin.Context) {
 	var body struct {
-		Name string `json:"name"`
+		Name    string `json:"name"`
+		Surname string `json:"surname"`
 	}
 
 	if c.Bind(&body) != nil {
@@ -20,7 +21,8 @@ func CreateTeacher(c *gin.Context) {
 
 	// Crear un nuevo profesor
 	newTeacher := models.Teacher{
-		Name: body.Name,
+		Name:    body.Name,
+		Surname: body.Surname,
 	}
 
 	if initializers.DB.Create(&newTeacher).Error != nil {
@@ -29,4 +31,21 @@ func CreateTeacher(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Teacher created successfully"})
+}
+
+func GetAllTeachers(c *gin.Context) {
+	var teachers []models.Teacher
+	initializers.DB.Find(&teachers)
+
+	c.JSON(http.StatusOK, teachers)
+}
+
+func GetTeacherByID(c *gin.Context) {
+	var teacher models.Teacher
+	if initializers.DB.First(&teacher, c.Param("id")).Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Teacher not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, teacher)
 }
