@@ -1,14 +1,6 @@
 package controllers
 
-import (
-	"backend/initializers"
-	"backend/models"
-	"net/http"
-	"time"
-
-	"github.com/gin-gonic/gin"
-)
-
+/*
 func EnrollStudent(c *gin.Context) {
 	var body struct {
 		UserID   uint `json:"user_id"`
@@ -48,3 +40,4 @@ func EnrollStudent(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Student enrolled successfully"})
 }
+*/

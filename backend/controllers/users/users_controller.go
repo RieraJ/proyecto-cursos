@@ -1,62 +1,9 @@
 package users
 
-import (
-	"backend/initializers"
-	"backend/models"
-	"net/http"
-	"os"
-	"time"
-
-	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
-	"golang.org/x/crypto/bcrypt"
-)
-
-func Signup(c *gin.Context) {
-	// Get the email/pass of request body
-	var body struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-		Name     string `json:"name"`
-		Surname  string `json:"surname"`
-		UserType string `json:"userType"`
-	}
-
-	if c.Bind(&body) != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid body"})
-
-		return
-	}
-	// Hash the pass
-	hash, err := bcrypt.GenerateFromPassword([]byte(body.Password), bcrypt.DefaultCost)
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while hashing the password"})
-
-		return
-	}
-
-	// Create a new user
-	user := models.User{Email: body.Email, Password: string(hash), Name: body.Name, Surname: body.Surname, UserType: body.UserType}
-	result := initializers.DB.Create(&user)
-
-	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while creating the user"})
-
-		return
-	}
-
-	// Respond
-	c.JSON(http.StatusOK, gin.H{"message": "User created successfully"})
-
-}
-
+/*
 func Login(c *gin.Context) {
 	// Get the email/pass of request body
-	var body struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
+	var body domain.LoginRequest
 
 	if c.Bind(&body) != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid body"})
@@ -105,16 +52,6 @@ func Validate(c *gin.Context) {
 	user, _ := c.Get("user")
 
 	c.JSON(http.StatusOK, gin.H{"message": user})
-}
-
-func GetAllUsers(c *gin.Context) {
-	var users []models.User
-	result := initializers.DB.Find(&users)
-	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to find all users"})
-		return
-	}
-	c.JSON(http.StatusOK, users)
 }
 
 func GetUserByID(c *gin.Context) {
@@ -189,3 +126,4 @@ func DeleteUserByID(c *gin.Context) {
 	initializers.DB.Delete(&user)
 	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
 }
+*/
