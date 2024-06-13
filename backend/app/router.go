@@ -13,7 +13,15 @@ var (
 
 func init() {
 	router = gin.Default()
-	router.Use(cors.Default())
+
+	// CORS configuration
+	config := cors.DefaultConfig()
+	config.AllowOrigins = []string{"http://localhost:3000"}
+	config.AllowCredentials = true
+	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
+	config.ExposeHeaders = []string{"Content-Length"}
+
+	router.Use(cors.New(config))
 }
 
 func StartRoute() {

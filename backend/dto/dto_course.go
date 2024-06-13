@@ -1,15 +1,18 @@
 package dto
 
 type Course struct {
-	ID          uint    `json:"id"`          // Course ID
-	Price       float64 `json:"price"`       // Course price
-	Active      bool    `json:"active"`      // Course status
-	Name        string  `json:"name"`        // Course name
-	Description string  `json:"description"` // Course description
+	ID           uint    `json:"id"`           // Course ID
+	Price        float64 `json:"price"`        // Course price
+	Active       bool    `json:"active"`       // Course status
+	Name         string  `json:"name"`         // Course name
+	Description  string  `json:"description"`  // Course description
+	Instructor   string  `json:"instructor"`   // Course instructor
+	Length       string  `json:"length"`       // Course length
+	Requirements string  `json:"requirements"` // Course requirements
 }
 
-type SearchResponse struct {
-	Courses []Course `json:"courses"`
+type SearchRequest struct {
+	Name string `json:"name"`
 }
 
 type InscriptionRequest struct {

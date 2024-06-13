@@ -14,6 +14,8 @@ type courseServiceInterface interface {
 	UpdateCourseByID(id uint, Course dto.Course) (dto.Course, error)
 	DeleteCourseByID(id uint) error
 	GetUserCourses(userID uint) ([]dao.Course, error)
+	SearchCourses(name string) ([]dto.Course, error)
+	GetAllCourses() ([]dao.Course, error)
 }
 
 var (
@@ -27,10 +29,13 @@ func init() {
 func (s *courseService) CreateCourse(course dto.Course) (dto.Course, error) {
 	// Convertir el DTO a un objeto DAO
 	newCourse := dao.Course{
-		Name:        course.Name,
-		Description: course.Description,
-		Price:       course.Price,
-		Active:      course.Active,
+		Name:         course.Name,
+		Description:  course.Description,
+		Price:        course.Price,
+		Active:       course.Active,
+		Instructor:   course.Instructor,
+		Length:       course.Length,
+		Requirements: course.Requirements,
 	}
 
 	// Verificar si el curso ya existe
@@ -54,12 +59,25 @@ func (s *courseService) UpdateCourseByID(id uint, course dto.Course) (dto.Course
 		return course, errors.New("course not found")
 	}
 
-	// Update the course
-	courseDB.ID = id
-	courseDB.Name = course.Name
-	courseDB.Description = course.Description
-	courseDB.Price = course.Price
-	courseDB.Active = course.Active
+	// Update only non-empty fields
+	if course.Name != "" {
+		courseDB.Name = course.Name
+	}
+	if course.Description != "" {
+		courseDB.Description = course.Description
+	}
+	if course.Price != 0 {
+		courseDB.Price = course.Price
+	}
+	if course.Instructor != "" {
+		courseDB.Instructor = course.Instructor
+	}
+	if course.Length != "" {
+		courseDB.Length = course.Length
+	}
+	if course.Requirements != "" {
+		courseDB.Requirements = course.Requirements
+	}
 
 	// Save the Course in the DB
 	if err := clients.UpdateCourseByID(id, *courseDB); err != nil {
@@ -67,11 +85,14 @@ func (s *courseService) UpdateCourseByID(id uint, course dto.Course) (dto.Course
 	}
 
 	return dto.Course{
-		ID:          courseDB.ID,
-		Name:        courseDB.Name,
-		Description: courseDB.Description,
-		Price:       courseDB.Price,
-		Active:      courseDB.Active,
+		ID:           courseDB.ID,
+		Name:         courseDB.Name,
+		Description:  courseDB.Description,
+		Price:        courseDB.Price,
+		Active:       courseDB.Active,
+		Instructor:   courseDB.Instructor,
+		Length:       courseDB.Length,
+		Requirements: courseDB.Requirements,
 	}, nil
 }
 
@@ -98,6 +119,45 @@ func (s *courseService) GetUserCourses(userID uint) ([]dao.Course, error) {
 	}
 	if len(courses) == 0 {
 		return nil, errors.New("no courses found for the user")
+	}
+
+	return courses, nil
+}
+
+func (s *courseService) SearchCourses(name string) ([]dto.Course, error) {
+	if name == "" {
+		return nil, errors.New("search term is empty")
+	}
+
+	coursesDAO, err := clients.SearchCourses(name)
+	if err != nil {
+		return nil, err
+	}
+
+	var coursesDTO []dto.Course
+	for _, course := range coursesDAO {
+		coursesDTO = append(coursesDTO, dto.Course{
+			ID:           course.ID,
+			Name:         course.Name,
+			Description:  course.Description,
+			Price:        course.Price,
+			Active:       course.Active,
+			Instructor:   course.Instructor,
+			Length:       course.Length,
+			Requirements: course.Requirements,
+		})
+	}
+
+	return coursesDTO, nil
+}
+
+func (s *courseService) GetAllCourses() ([]dao.Course, error) {
+	courses, err := clients.GetAllCourses()
+	if err != nil {
+		return nil, err
+	}
+	if len(courses) == 0 {
+		return nil, errors.New("no courses found")
 	}
 
 	return courses, nil

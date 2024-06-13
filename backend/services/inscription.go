@@ -21,21 +21,21 @@ func init() {
 	InscriptionServiceInterfaceInstance = &inscriptionService{}
 }
 
-func (s *inscriptionService) EnrollUser(EnrollUser dto.InscriptionRequest) error {
+func (s *inscriptionService) EnrollUser(enrollUser dto.InscriptionRequest) error {
 	// Verify if user exists
-	_, err := clients.SelectUserbyID(EnrollUser.UserID)
+	_, err := clients.SelectUserbyID(enrollUser.UserID)
 	if err != nil {
 		return err
 	}
 
 	// Verify if course exists
-	_, err = clients.ObtainCourseByID(EnrollUser.CourseID)
+	_, err = clients.ObtainCourseByID(enrollUser.CourseID)
 	if err != nil {
 		return err
 	}
 
 	// Verify if user is already enrolled
-	inscription, err := clients.GetUserInscription(EnrollUser.UserID, EnrollUser.CourseID)
+	inscription, err := clients.GetUserInscription(enrollUser.UserID, enrollUser.CourseID)
 	if err != nil {
 		return err
 	}
@@ -45,13 +45,12 @@ func (s *inscriptionService) EnrollUser(EnrollUser dto.InscriptionRequest) error
 
 	// Enroll user
 	err = clients.EnrollUser(dao.CourseInscription{
-		UserID:   EnrollUser.UserID,
-		CourseID: EnrollUser.CourseID,
+		UserID:   enrollUser.UserID,
+		CourseID: enrollUser.CourseID,
 	})
 	if err != nil {
 		return err
 	}
 
 	return nil
-
 }

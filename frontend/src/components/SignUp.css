@@ -1,0 +1,95 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: sans-serif;
+}
+
+body {
+  background-color: #364452;
+  width: 100%;
+  height: 100vh;
+}
+
+#signup {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#formSignUp {
+  width: 400px;
+  background-color: #f8f9fa;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 10px 10px 20px -6px rgba(0, 0, 0, 0.75);
+}
+
+#formSignUp h1 {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.inputContainer {
+  position: relative;
+  margin-bottom: 30px;
+}
+
+.inputSignUp {
+  width: 100%;
+  padding: 16px;
+  font-size: 16px;
+  color: #252629;
+  /* Color del texto */
+  border: 1px solid #ced4da;
+  border-radius: 15px;
+  background: none;
+  outline: none;
+  z-index: 1;
+}
+
+.labelSignUp {
+  position: absolute;
+  left: 16px;
+  top: 10px;
+  background-color: #f8f9fa;
+  padding: 0 5px;
+  color: #adb5db;
+  font-size: 16px;
+  transition: 0.3s;
+  z-index: 0;
+}
+
+.inputSignUp:focus+.labelSignUp,
+.inputSignUp:not(:placeholder-shown).inputSignUp:not(:focus)+.labelSignUp {
+  top: -10px;
+  font-size: 13px;
+  font-weight: bold;
+  color: #252629;
+}
+
+.inputSignUp:focus {
+  border: 1px solid #252629;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  background-color: #252629;
+  color: #f8f9fa;
+  font-size: 16px;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.submit-btn:hover {
+  border-radius: 5px 15px;
+}
+
+::placeholder {
+  color: #adb5db;
+}

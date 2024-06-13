@@ -54,10 +54,10 @@ func SelectUserByEmail(email string) (dao.User, error) {
 func SelectUserbyID(id uint) (dao.User, error) {
 	var user dao.User
 	result := DB.First(&user, id)
-	if result.Error != nil {
-		return user, result.Error
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return user, errors.New("user not found")
 	}
-	return user, nil
+	return user, result.Error
 }
 
 func GetAllUsers() (users []dao.User, err error) {
@@ -84,6 +84,15 @@ func CreateCourse(course dao.Course) error {
 	return result.Error
 }
 
+func GetAllCourses() ([]dao.Course, error) {
+	var courses []dao.Course
+	result := DB.Find(&courses)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return courses, nil
+}
+
 func ObtainCourseByName(name string) (*dao.Course, error) {
 	var course dao.Course
 	result := DB.Where("name = ?", name).
@@ -108,7 +117,7 @@ func GetUserInscription(userID uint, courseID uint) (*dao.CourseInscription, err
 	result := DB.Where("user_id = ? AND course_id = ?", userID, courseID).
 		First(&inscription)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, nil // No error si la inscripción no se encuentra
+		return nil, nil
 	}
 	return &inscription, result.Error
 }
@@ -144,7 +153,17 @@ func DeleteCourseByID(id uint) error {
 func EnrollUser(inscription dao.CourseInscription) error {
 	result := DB.Create(&inscription)
 	if result.Error != nil {
-		log.Println("Error enrolling user:", result.Error)
+		return errors.New("error enrolling user: " + result.Error.Error())
 	}
-	return result.Error
+	return nil
+}
+
+func SearchCourses(name string) ([]dao.Course, error) {
+	nameDB := name
+	var courses []dao.Course
+	err := DB.Where("name LIKE ?", "%"+nameDB+"%").Find(&courses).Error
+	if err != nil {
+		return nil, err
+	}
+	return courses, nil
 }

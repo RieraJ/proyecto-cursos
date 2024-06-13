@@ -1,0 +1,54 @@
+/* Main.css */
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f9f9f9;
+}
+
+.main-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-image: url('../assets/gif.gif'); /* Replace with your GIF URL */
+    background-size: cover;
+    background-position: center;
+}
+
+.main-header {
+    text-align: center;
+    background: rgba(255, 145, 0, 0.8);
+    width: 95%;
+    padding: 40px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.main-header h1 {
+    margin: 0;
+    font-size: 3rem;
+    color: #fff;
+}
+
+.main-header p {
+    font-size: 1.25rem;
+    color: #fff;
+    margin: 20px 0;
+}
+
+.cta-button {
+    display: inline-block;
+    padding: 10px 20px;
+    font-size: 1.25rem;
+    color: #fff;
+    background-color: #007bff;
+    border: none;
+    border-radius: 50px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.cta-button:hover {
+    background-color: #0056b3;
+}

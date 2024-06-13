@@ -112,3 +112,57 @@ func GetUserCourses(c *gin.Context) {
 	// Return the user's courses in the response
 	c.JSON(http.StatusOK, gin.H{"courses": courses})
 }
+
+func SearchCourses(c *gin.Context) {
+	// Get the 'name' query parameter
+	name := c.Query("name")
+
+	if name == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "search term is empty"})
+		return
+	}
+
+	courses, err := services.CourseServiceInterfaceInstance.SearchCourses(name)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"courses": courses})
+}
+
+/*
+	func GetAllCourses(c *gin.Context) {
+		courses, err := services.CourseServiceInterfaceInstance.GetAllCourses()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"courses": courses})
+	}
+*/
+func GetAllCourses(c *gin.Context) {
+	courses, err := services.CourseServiceInterfaceInstance.GetAllCourses()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Formatear la respuesta para asegurarse de que sigue la estructura correcta
+	var formattedCourses []dto.Course
+	for _, course := range courses {
+		formattedCourses = append(formattedCourses, dto.Course{
+			ID:           course.ID,
+			Name:         course.Name,
+			Description:  course.Description,
+			Price:        course.Price,
+			Active:       course.Active,
+			Instructor:   course.Instructor,
+			Length:       course.Length,
+			Requirements: course.Requirements,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"courses": formattedCourses})
+}
