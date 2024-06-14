@@ -1,5 +1,5 @@
 # Dependency directories
-/vendor
+/vendor/
 
 # Go specific
 /go.sum
