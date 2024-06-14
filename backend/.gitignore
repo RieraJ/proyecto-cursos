@@ -1,9 +1,6 @@
 # Dependency directories
 /vendor
 
-# Environment files
-.env
-
 # Go specific
 /go.sum
 /go.mod
