@@ -131,17 +131,6 @@ func SearchCourses(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"courses": courses})
 }
 
-/*
-	func GetAllCourses(c *gin.Context) {
-		courses, err := services.CourseServiceInterfaceInstance.GetAllCourses()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{"courses": courses})
-	}
-*/
 func GetAllCourses(c *gin.Context) {
 	courses, err := services.CourseServiceInterfaceInstance.GetAllCourses()
 	if err != nil {

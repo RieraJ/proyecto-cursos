@@ -43,6 +43,7 @@ func (s *userService) Signup(signUp dto.SignUpRequest) error {
 		Password: hashedPassword,
 		Name:     signUp.Name,
 		Surname:  signUp.Surname,
+		UserType: "student",
 	}
 
 	// Guardar el usuario en la base de datos
