@@ -150,6 +150,7 @@ func GetAllCourses(c *gin.Context) {
 			Instructor:   course.Instructor,
 			Length:       course.Length,
 			Requirements: course.Requirements,
+			Image:        course.Image,
 		})
 	}
 

@@ -36,6 +36,7 @@ func (s *courseService) CreateCourse(course dto.Course) (dto.Course, error) {
 		Instructor:   course.Instructor,
 		Length:       course.Length,
 		Requirements: course.Requirements,
+		Image:        course.Image,
 	}
 
 	// Verificar si el curso ya existe
@@ -78,6 +79,12 @@ func (s *courseService) UpdateCourseByID(id uint, course dto.Course) (dto.Course
 	if course.Requirements != "" {
 		courseDB.Requirements = course.Requirements
 	}
+	if course.Image != "" {
+		courseDB.Image = course.Image
+	}
+	if course.Active {
+		courseDB.Active = course.Active
+	}
 
 	// Save the Course in the DB
 	if err := clients.UpdateCourseByID(id, *courseDB); err != nil {
@@ -93,6 +100,7 @@ func (s *courseService) UpdateCourseByID(id uint, course dto.Course) (dto.Course
 		Instructor:   courseDB.Instructor,
 		Length:       courseDB.Length,
 		Requirements: courseDB.Requirements,
+		Image:        courseDB.Image,
 	}, nil
 }
 
@@ -145,6 +153,7 @@ func (s *courseService) SearchCourses(name string) ([]dto.Course, error) {
 			Instructor:   course.Instructor,
 			Length:       course.Length,
 			Requirements: course.Requirements,
+			Image:        course.Image,
 		})
 	}
 

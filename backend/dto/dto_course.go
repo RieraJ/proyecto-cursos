@@ -9,6 +9,7 @@ type Course struct {
 	Instructor   string  `json:"instructor"`   // Course instructor
 	Length       string  `json:"length"`       // Course length
 	Requirements string  `json:"requirements"` // Course requirements
+	Image        string  `json:"image"`        // Course image
 }
 
 type SearchRequest struct {
