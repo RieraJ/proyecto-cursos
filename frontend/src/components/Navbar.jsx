@@ -6,15 +6,12 @@ const Navbar = () => {
 
     return (
         <div className="navbar">
-            <NavLink to="/" exact="true">
-                <FaHome alt="" className="logo" />
-            </NavLink>
+            <div className="home">
+                <NavLink to="/" exact="true">
+                    <FaHome alt="" className="logo" />
+                </NavLink>
+            </div>
             <ul>
-                <li>
-                    <NavLink to="/signup" className="custom-link">
-                        Registrarse
-                    </NavLink>
-                </li>
                 <li>
                     <NavLink to="/login" className="custom-link">
                         Iniciar Sesion
@@ -26,6 +23,12 @@ const Navbar = () => {
                     </NavLink>
                 </li>
             </ul>
+            <div className="profile">
+                    <FaHome alt="" className="logo" />
+            </div>
+            <div className="options">
+                    <FaHome alt="" className="logo" />
+            </div>
         </div>
     );
 };

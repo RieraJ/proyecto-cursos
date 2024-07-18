@@ -55,7 +55,7 @@ const Courses = () => {
 
     const handleEnroll = async (courseId) => {
         try {
-            // Realizar la solicitud de inscripción
+            // Inscription request
             const response = await fetch(`http://localhost:4000/enroll`, {
                 method: 'POST',
                 headers: {
@@ -69,7 +69,6 @@ const Courses = () => {
                 setEnrollmentMessage('Successfully enrolled!');
                 alert('Successfully enrolled!');
             } else {
-                // Obtener y mostrar el mensaje de error específico del backend
                 const errorData = await response.json();
                 if (response.status === 400 && errorData.error === 'user is already enrolled in this course') {
                     alert('You are already enrolled in this course.');
@@ -99,7 +98,7 @@ const Courses = () => {
             {error && <p className="error-message">{error}</p>}
             {enrollmentMessage && <p className="success-message">{enrollmentMessage}</p>}
             
-            <ul>
+            <ul className='course-list'>
                 {courses.map((course) => (
                     <li key={course.id} className="course-card">
                         <h3>{course.name ? course.name : "No name available"}</h3>

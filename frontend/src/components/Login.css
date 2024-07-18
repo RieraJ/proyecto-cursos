@@ -91,3 +91,16 @@
 #login #formLogin .inputLogin:focus {
   border: 1px solid #252629;
 }
+
+#login #formLogin .inputLogin:not(:placeholder-shown).inputLogin:not(:focus) {
+  border: 1px solid #252629;
+}
+
+#login #formLogin .inputLogin:focus + .labelLogin {
+  color: #252629;
+}
+
+#login #formLogin .signup {
+  text-align: center;
+  margin-top: 20px;
+}

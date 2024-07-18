@@ -79,6 +79,7 @@ const handleSubmit = async (e) => {
           <label htmlFor="password" className="labelLogin">Password</label>
         </div>
         <button type="submit" className="submit-btn">Login</button>
+        <p className='signup'>Don't have an account? <a href="/signup">Register</a></p>
       </form>
     </div>
   );

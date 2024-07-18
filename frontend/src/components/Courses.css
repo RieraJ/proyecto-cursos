@@ -1,13 +1,12 @@
-/* Courses.css */
 .courses-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 100vh;
-    max-width: 800px;
+    max-width: 80vh;
     margin: 0 auto;
     padding: 20px;
+    box-sizing: border-box;
 }
 
 .search-form {
@@ -46,15 +45,29 @@
     border-color: #0056b3;
 }
 
+.course-list {
+    display: flex;
+    flex-wrap: wrap; /* Permite el ajuste de línea */
+    justify-content: center; /* Centra los elementos horizontalmente */
+    gap: 20px; /* Espacio entre los elementos */
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    width: 100%;
+    height: auto;
+}
+
 .course-card {
     list-style: none;
     padding: 15px;
-    margin: 10px 0;
+    margin: 10px;
     border: 1px solid #ccc;
     border-radius: 8px;
     background-color: white;
     transition: background-color 0.3s, box-shadow 0.3s;
     cursor: pointer;
+    flex: 1 1 calc(33.333% - 20px); /* Ajusta el ancho de los elementos */
+    box-sizing: border-box;
 }
 
 .course-card:hover {
@@ -84,7 +97,7 @@
 
 .course-card .price {
     font-weight: bold;
-    color: #ff4500;
+    color: #20b358;
 }
 
 .course-card .instructor {
@@ -102,7 +115,7 @@
     margin-top: 10px;
     padding: 10px 20px;
     font-size: 1rem;
-    background-color: #28a745;
+    background-color: #2d302e;
     color: #fff;
     border: none;
     border-radius: 4px;
@@ -110,7 +123,7 @@
 }
 
 .course-card .enroll-button:hover {
-    background-color: #218838;
+    background-color: #585858;
 }
 
 .error-message {
