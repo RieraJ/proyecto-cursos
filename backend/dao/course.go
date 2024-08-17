@@ -12,4 +12,5 @@ type Course struct {
 	Length       string  `gorm:"not null"`
 	Requirements string  `gorm:"not null"`
 	Image        string  `gorm:"not null"`
+	Category     string  `gorm:"not null"`
 }

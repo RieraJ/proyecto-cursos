@@ -8,6 +8,7 @@ import LoginForm from './components/LoginForm';
 import './App.css';
 import Navbar from './components/Navbar';
 import Courses from './components/Courses';
+import Profile from './components/Profile';
 
 function App() {
 
@@ -20,6 +21,7 @@ function App() {
           <Route path="/login" element={<LoginForm />} />
           <Route path="/" element={<Main />} />
           <Route path="/courses" element={<Courses />} />
+          <Route path="/profile" element={<Profile />} />
         </Routes>
       </main>
     </div>

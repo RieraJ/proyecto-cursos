@@ -16,6 +16,7 @@ type courseServiceInterface interface {
 	GetUserCourses(userID uint) ([]dao.Course, error)
 	SearchCourses(name string) ([]dto.Course, error)
 	GetAllCourses() ([]dao.Course, error)
+	GetUserInfo(id uint) (dto.UserInfo, error)
 }
 
 var (
@@ -37,6 +38,7 @@ func (s *courseService) CreateCourse(course dto.Course) (dto.Course, error) {
 		Length:       course.Length,
 		Requirements: course.Requirements,
 		Image:        course.Image,
+		Category:     course.Category,
 	}
 
 	// Verificar si el curso ya existe
@@ -85,6 +87,9 @@ func (s *courseService) UpdateCourseByID(id uint, course dto.Course) (dto.Course
 	if course.Active {
 		courseDB.Active = course.Active
 	}
+	if course.Category != "" {
+		courseDB.Category = course.Category
+	}
 
 	// Save the Course in the DB
 	if err := clients.UpdateCourseByID(id, *courseDB); err != nil {
@@ -101,6 +106,7 @@ func (s *courseService) UpdateCourseByID(id uint, course dto.Course) (dto.Course
 		Length:       courseDB.Length,
 		Requirements: courseDB.Requirements,
 		Image:        courseDB.Image,
+		Category:     courseDB.Category,
 	}, nil
 }
 
@@ -154,6 +160,7 @@ func (s *courseService) SearchCourses(name string) ([]dto.Course, error) {
 			Length:       course.Length,
 			Requirements: course.Requirements,
 			Image:        course.Image,
+			Category:     course.Category,
 		})
 	}
 
@@ -170,4 +177,17 @@ func (s *courseService) GetAllCourses() ([]dao.Course, error) {
 	}
 
 	return courses, nil
+}
+
+func (s *courseService) GetUserInfo(id uint) (dto.UserInfo, error) {
+	user, err := clients.SelectUserbyID(id)
+	if err != nil {
+		return dto.UserInfo{}, errors.New("user not found")
+	}
+
+	return dto.UserInfo{
+		ID:       user.ID,
+		Email:    user.Email,
+		UserType: user.UserType,
+	}, nil
 }

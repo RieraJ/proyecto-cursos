@@ -31,6 +31,6 @@ func Login(c *gin.Context) {
 	c.SetCookie("token", token, 60*60*24*30, "/", "localhost", false, true)
 	c.SetCookie("Auth", token, 60*60*24*30, "", "", false, true)
 	c.SetCookie("userId", strconv.Itoa(int(userDAO.ID)), 60*60*24*30, "/", "localhost", false, true) // Guardar userId en cookie
-
+	c.SetCookie("userId", strconv.Itoa(int(userDAO.ID)), 60*60*24*30, "/", "localhost", false, true) // Guardar userId en cookie
 	c.JSON(http.StatusOK, gin.H{"message": "Cookie successfully generated"})
 }

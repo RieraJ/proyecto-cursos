@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"backend/clients"
+	"backend/dao"
 	"backend/dto"
 	"backend/services"
 	"net/http"
@@ -92,29 +93,40 @@ func DeleteCourseByID(c *gin.Context) {
 }
 
 func GetUserCourses(c *gin.Context) {
-	// Get the ID from the URL
-	id := c.Param("id")
-
-	// Convert the ID to an unsigned integer
-	idUint, err := strconv.ParseUint(id, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
-	// Call the GetUserCourses service
-	courses, err := services.CourseServiceInterfaceInstance.GetUserCourses(uint(idUint))
+	userID := user.(dao.User).ID
+	courses, err := services.CourseServiceInterfaceInstance.GetUserCourses(userID)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.JSON(http.StatusNotFound, gin.H{"error": "No courses found for the user"})
 		return
 	}
 
-	// Return the user's courses in the response
-	c.JSON(http.StatusOK, gin.H{"courses": courses})
+	// Convert dao.Course to dto.Course for a consistent response format
+	var coursesDTO []dto.Course
+	for _, course := range courses {
+		coursesDTO = append(coursesDTO, dto.Course{
+			ID:           course.ID,
+			Name:         course.Name,
+			Description:  course.Description,
+			Price:        course.Price,
+			Active:       course.Active,
+			Instructor:   course.Instructor,
+			Length:       course.Length,
+			Requirements: course.Requirements,
+			Image:        course.Image,
+			Category:     course.Category,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"courses": coursesDTO})
 }
 
 func SearchCourses(c *gin.Context) {
-	// Get the 'name' query parameter
 	name := c.Query("name")
 
 	if name == "" {
@@ -128,13 +140,22 @@ func SearchCourses(c *gin.Context) {
 		return
 	}
 
+	if len(courses) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "no courses found"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"courses": courses})
 }
 
 func GetAllCourses(c *gin.Context) {
 	courses, err := services.CourseServiceInterfaceInstance.GetAllCourses()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		if err.Error() == "no courses found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
 
@@ -155,4 +176,26 @@ func GetAllCourses(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"courses": formattedCourses})
+}
+
+func GetUserInfo(c *gin.Context) {
+	// Obtener el ID del usuario desde el contexto (donde se estableció en RequireAuth)
+	user, _ := c.Get("user")
+	if user == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Obtener el ID del usuario
+	userID := user.(dao.User).ID
+
+	// Llamar al servicio para obtener la información del usuario
+	userInfo, err := services.CourseServiceInterfaceInstance.GetUserInfo(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Devolver la información del usuario en la respuesta
+	c.JSON(http.StatusOK, gin.H{"userInfo": userInfo})
 }
