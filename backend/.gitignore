@@ -4,3 +4,4 @@
 # Go specific
 /go.sum
 /go.mod
+.env
