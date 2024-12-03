@@ -106,9 +106,17 @@ func GetUserCourses(c *gin.Context) {
 		return
 	}
 
-	// Convert dao.Course to dto.Course for a consistent response format
+	// Convert dao.Course to dto.Course and include categories
 	var coursesDTO []dto.Course
 	for _, course := range courses {
+		var categoriesDTO []dto.Category
+		for _, category := range course.Categories {
+			categoriesDTO = append(categoriesDTO, dto.Category{
+				ID:   category.ID,
+				Name: category.Name,
+			})
+		}
+
 		coursesDTO = append(coursesDTO, dto.Course{
 			ID:           course.ID,
 			Name:         course.Name,
@@ -118,8 +126,7 @@ func GetUserCourses(c *gin.Context) {
 			Instructor:   course.Instructor,
 			Length:       course.Length,
 			Requirements: course.Requirements,
-			Image:        course.Image,
-			Category:     course.Category,
+			Categories:   categoriesDTO,
 		})
 	}
 
@@ -159,9 +166,17 @@ func GetAllCourses(c *gin.Context) {
 		return
 	}
 
-	// Formatear la respuesta para asegurarse de que sigue la estructura correcta
+	// Formatear la respuesta para incluir categorías
 	var formattedCourses []dto.Course
 	for _, course := range courses {
+		var categoriesDTO []dto.Category
+		for _, category := range course.Categories {
+			categoriesDTO = append(categoriesDTO, dto.Category{
+				ID:   category.ID,
+				Name: category.Name,
+			})
+		}
+
 		formattedCourses = append(formattedCourses, dto.Course{
 			ID:           course.ID,
 			Name:         course.Name,
@@ -171,7 +186,7 @@ func GetAllCourses(c *gin.Context) {
 			Instructor:   course.Instructor,
 			Length:       course.Length,
 			Requirements: course.Requirements,
-			Image:        course.Image,
+			Categories:   categoriesDTO,
 		})
 	}
 

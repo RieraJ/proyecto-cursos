@@ -1,6 +1,7 @@
 package app
 
 import (
+	comments "backend/controllers/comments"
 	courses "backend/controllers/courses"
 	"backend/controllers/users"
 	"backend/middleware"
@@ -24,4 +25,9 @@ func mapUrls() {
 	// Rutas para inscripciones
 	router.POST("/enroll", middleware.RequireAuth, courses.EnrollUser)
 
+	// Rutas para comentarios
+	router.POST("/comments", middleware.RequireAuth, comments.CreateComment)
+	router.DELETE("/comments/:id", middleware.RequireAuth, comments.DeleteCommentByID)
+	router.GET("/users/:id/comments", middleware.RequireAuth, comments.GetUserComments)
+	router.GET("/courses/:id/comments", comments.GetCourseComments)
 }

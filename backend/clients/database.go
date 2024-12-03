@@ -21,17 +21,19 @@ func ConnectDb() error {
 	if err != nil {
 		return fmt.Errorf("failed to connect database: %w", err)
 	}
-
-	err = DB.AutoMigrate(&dao.User{}, &dao.Course{}, &dao.CourseInscription{})
-	if err != nil {
-		return fmt.Errorf("failed to migrate database: %w", err)
-	}
-
-	// Add index with maximum length
-	err = DB.Exec("CREATE UNIQUE INDEX idx_email ON users (email(50));").Error
-	if err != nil {
-		return fmt.Errorf("failed to create index: %w", err)
-	}
+	/*
+		err = DB.AutoMigrate(&dao.Course{}, &dao.Category{})
+		if err != nil {
+			return fmt.Errorf("failed to migrate database: %w", err)
+		}
+	*/
+	/*
+		// Add index with maximum length
+		err = DB.Exec("CREATE UNIQUE INDEX idx_email ON users (email(50));").Error
+		if err != nil {
+			return fmt.Errorf("failed to create index: %w", err)
+		}
+	*/
 	return nil
 }
 
@@ -158,11 +160,92 @@ func EnrollUser(inscription dao.CourseInscription) error {
 	return nil
 }
 
-func SearchCourses(name string) ([]dao.Course, error) {
-	nameDB := name
+func SearchCourses(query string) ([]dao.Course, error) {
 	var courses []dao.Course
-	err := DB.Where("name LIKE ?", "%"+nameDB+"%").Find(&courses).Error
+	err := DB.Preload("Categories").
+		Where("courses.name LIKE ? OR categories.name LIKE ?", "%"+query+"%", "%"+query+"%").
+		Joins("JOIN course_categories ON courses.id = course_categories.course_id").
+		Joins("JOIN categories ON categories.id = course_categories.category_id").
+		Group("courses.id").
+		Find(&courses).Error
+
 	if err != nil {
+		return nil, err
+	}
+
+	if len(courses) == 0 {
+		return nil, errors.New("no courses found")
+	}
+
+	return courses, nil
+}
+
+func CreateComment(comment dao.Comment) error {
+	result := DB.Create(&comment)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+func GetCommentByID(id uint) (*dao.Comment, error) {
+	var comment dao.Comment
+	result := DB.First(&comment, id)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &comment, nil
+}
+
+func DeleteCommentByID(id uint) error {
+	result := DB.Delete(&dao.Comment{}, id)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+func GetUserComments(userID uint) ([]dao.Comment, error) {
+	var comments []dao.Comment
+	result := DB.Where("user_id = ?", userID).Find(&comments)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return comments, nil
+}
+
+func GetCourseComments(courseID uint) ([]dao.Comment, error) {
+	var comments []dao.Comment
+	result := DB.Where("course_id = ?", courseID).Find(&comments)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return comments, nil
+}
+
+func FindOrCreateCategory(category *dao.Category) error {
+	return DB.Where("name = ?", category.Name).FirstOrCreate(category).Error
+}
+
+func GetAllCoursesWithCategories() ([]dao.Course, error) {
+	var courses []dao.Course
+	if err := DB.Preload("Categories").Find(&courses).Error; err != nil {
+		return nil, err
+	}
+	return courses, nil
+}
+
+func ObtainCourseByIDWithCategories(id uint) (*dao.Course, error) {
+	var course dao.Course
+	if err := DB.Preload("Categories").First(&course, id).Error; err != nil {
+		return nil, err
+	}
+	return &course, nil
+}
+
+func SearchCoursesWithCategories(name string) ([]dao.Course, error) {
+	var courses []dao.Course
+	if err := DB.Preload("Categories").Where("name LIKE ?", "%"+name+"%").Find(&courses).Error; err != nil {
 		return nil, err
 	}
 	return courses, nil

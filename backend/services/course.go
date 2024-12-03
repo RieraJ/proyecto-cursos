@@ -15,7 +15,7 @@ type courseServiceInterface interface {
 	DeleteCourseByID(id uint) error
 	GetUserCourses(userID uint) ([]dao.Course, error)
 	SearchCourses(name string) ([]dto.Course, error)
-	GetAllCourses() ([]dao.Course, error)
+	GetAllCourses() ([]dto.Course, error)
 	GetUserInfo(id uint) (dto.UserInfo, error)
 }
 
@@ -28,7 +28,16 @@ func init() {
 }
 
 func (s *courseService) CreateCourse(course dto.Course) (dto.Course, error) {
-	// Convertir el DTO a un objeto DAO
+
+	var categories []dao.Category
+	for _, categoryDTO := range course.Categories {
+		category := dao.Category{Name: categoryDTO.Name}
+		if err := clients.FindOrCreateCategory(&category); err != nil {
+			return course, err
+		}
+		categories = append(categories, category)
+	}
+
 	newCourse := dao.Course{
 		Name:         course.Name,
 		Description:  course.Description,
@@ -37,8 +46,7 @@ func (s *courseService) CreateCourse(course dto.Course) (dto.Course, error) {
 		Instructor:   course.Instructor,
 		Length:       course.Length,
 		Requirements: course.Requirements,
-		Image:        course.Image,
-		Category:     course.Category,
+		Categories:   categories,
 	}
 
 	// Verificar si el curso ya existe
@@ -56,13 +64,13 @@ func (s *courseService) CreateCourse(course dto.Course) (dto.Course, error) {
 }
 
 func (s *courseService) UpdateCourseByID(id uint, course dto.Course) (dto.Course, error) {
-	// Obtain the course by ID
-	courseDB, err := clients.ObtainCourseByID(id)
+	// Obtener el curso por ID
+	courseDB, err := clients.ObtainCourseByIDWithCategories(id) // Cargar curso con categorías
 	if err != nil {
-		return course, errors.New("course not found")
+		return dto.Course{}, errors.New("course not found")
 	}
 
-	// Update only non-empty fields
+	// Actualizar solo los campos no vacíos
 	if course.Name != "" {
 		courseDB.Name = course.Name
 	}
@@ -81,19 +89,35 @@ func (s *courseService) UpdateCourseByID(id uint, course dto.Course) (dto.Course
 	if course.Requirements != "" {
 		courseDB.Requirements = course.Requirements
 	}
-	if course.Image != "" {
-		courseDB.Image = course.Image
-	}
 	if course.Active {
 		courseDB.Active = course.Active
 	}
-	if course.Category != "" {
-		courseDB.Category = course.Category
+
+	// Actualizar categorías si se proporcionaron
+	if len(course.Categories) > 0 {
+		var updatedCategories []dao.Category
+		for _, categoryDTO := range course.Categories {
+			category := dao.Category{Name: categoryDTO.Name}
+			if err := clients.FindOrCreateCategory(&category); err != nil {
+				return dto.Course{}, err
+			}
+			updatedCategories = append(updatedCategories, category)
+		}
+		courseDB.Categories = updatedCategories
 	}
 
-	// Save the Course in the DB
+	// Guardar los cambios en la base de datos
 	if err := clients.UpdateCourseByID(id, *courseDB); err != nil {
-		return course, err
+		return dto.Course{}, err
+	}
+
+	// Convertir a DTO y devolver
+	updatedCategoriesDTO := []dto.Category{}
+	for _, category := range courseDB.Categories {
+		updatedCategoriesDTO = append(updatedCategoriesDTO, dto.Category{
+			ID:   category.ID,
+			Name: category.Name,
+		})
 	}
 
 	return dto.Course{
@@ -105,8 +129,7 @@ func (s *courseService) UpdateCourseByID(id uint, course dto.Course) (dto.Course
 		Instructor:   courseDB.Instructor,
 		Length:       courseDB.Length,
 		Requirements: courseDB.Requirements,
-		Image:        courseDB.Image,
-		Category:     courseDB.Category,
+		Categories:   updatedCategoriesDTO,
 	}, nil
 }
 
@@ -138,18 +161,28 @@ func (s *courseService) GetUserCourses(userID uint) ([]dao.Course, error) {
 	return courses, nil
 }
 
-func (s *courseService) SearchCourses(name string) ([]dto.Course, error) {
-	if name == "" {
+func (s *courseService) SearchCourses(query string) ([]dto.Course, error) {
+	if query == "" {
 		return nil, errors.New("search term is empty")
 	}
 
-	coursesDAO, err := clients.SearchCourses(name)
+	// Obtener cursos por nombre o por categoría
+	coursesDAO, err := clients.SearchCourses(query)
 	if err != nil {
 		return nil, err
 	}
 
+	// Convertir los resultados al formato DTO
 	var coursesDTO []dto.Course
 	for _, course := range coursesDAO {
+		categoriesDTO := []dto.Category{}
+		for _, category := range course.Categories {
+			categoriesDTO = append(categoriesDTO, dto.Category{
+				ID:   category.ID,
+				Name: category.Name,
+			})
+		}
+
 		coursesDTO = append(coursesDTO, dto.Course{
 			ID:           course.ID,
 			Name:         course.Name,
@@ -159,14 +192,14 @@ func (s *courseService) SearchCourses(name string) ([]dto.Course, error) {
 			Instructor:   course.Instructor,
 			Length:       course.Length,
 			Requirements: course.Requirements,
-			Image:        course.Image,
-			Category:     course.Category,
+			Categories:   categoriesDTO,
 		})
 	}
 
 	return coursesDTO, nil
 }
 
+/*
 func (s *courseService) GetAllCourses() ([]dao.Course, error) {
 	courses, err := clients.GetAllCourses()
 	if err != nil {
@@ -177,6 +210,39 @@ func (s *courseService) GetAllCourses() ([]dao.Course, error) {
 	}
 
 	return courses, nil
+}
+*/
+
+func (s *courseService) GetAllCourses() ([]dto.Course, error) {
+	coursesDAO, err := clients.GetAllCoursesWithCategories() // Nueva función para cargar categorías
+	if err != nil {
+		return nil, err
+	}
+
+	var coursesDTO []dto.Course
+	for _, course := range coursesDAO {
+		var categoriesDTO []dto.Category
+		for _, category := range course.Categories {
+			categoriesDTO = append(categoriesDTO, dto.Category{
+				ID:   category.ID,
+				Name: category.Name,
+			})
+		}
+
+		coursesDTO = append(coursesDTO, dto.Course{
+			ID:           course.ID,
+			Name:         course.Name,
+			Description:  course.Description,
+			Price:        course.Price,
+			Active:       course.Active,
+			Instructor:   course.Instructor,
+			Length:       course.Length,
+			Requirements: course.Requirements,
+			Categories:   categoriesDTO,
+		})
+	}
+
+	return coursesDTO, nil
 }
 
 func (s *courseService) GetUserInfo(id uint) (dto.UserInfo, error) {
