@@ -3,141 +3,138 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    max-width: 80vh;
+    max-width: 90vw;
     margin: 0 auto;
     padding: 20px;
     box-sizing: border-box;
+    border-radius: 12px;
 }
 
 .search-form {
     display: flex;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 30px;
     width: 100%;
+    max-width: 600px;
 }
 
 .search-input {
     flex: 1;
-    padding: 10px;
-    height: auto;
-    width: 100%;
+    padding: 12px;
     font-size: 1rem;
-    border: 1px solid #ccc;
-    border-radius: 100px 0 0 100px;
+    border: 2px solid #ccc;
+    border-radius: 50px 0 0 50px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #3700ff;
+    box-shadow: 0 0 8px #3700ff;
 }
 
 .search-button {
-    padding: 10px 20px;
+    padding: 12px 20px;
     font-size: 1rem;
-    background-color: #007bff;
+    background-color: #3700ff;
     color: #fff;
-    border: 1px solid #007bff;
-    border-radius: 0 100px 100px 0;
+    border: 2px solid #3700ff;
+    border-radius: 0 50px 50px 0;
     cursor: pointer;
-}
-
-.search-button i {
-    margin-right: 5px;
+    transition: background-color 0.3s, border-color 0.3s;
 }
 
 .search-button:hover {
-    background-color: #0056b3;
-    border-color: #0056b3;
+    background-color: #653aff;
+    border-color: #653aff;
 }
 
 .course-list {
     display: flex;
-    flex-wrap: wrap; /* Permite el ajuste de línea */
-    justify-content: center; /* Centra los elementos horizontalmente */
-    gap: 20px; /* Espacio entre los elementos */
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 30px;
     margin: 0;
     padding: 0;
     list-style: none;
     width: 100%;
-    height: auto;
 }
 
 .course-card {
-    list-style: none;
-    padding: 15px;
-    margin: 10px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    background-color: white;
-    transition: background-color 0.3s, box-shadow 0.3s;
-    cursor: pointer;
-    flex: 1 1 calc(33.333% - 20px); /* Ajusta el ancho de los elementos */
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    width: calc(33.333% - 30px); /* Responsivo: 3 tarjetas por fila */
+    max-width: 300px;
+    transition: transform 0.3s, box-shadow 0.3s;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
     box-sizing: border-box;
 }
 
 .course-card:hover {
-    background-color: #f5f5dc; /* Light cream color */
-}
-
-.course-card.active {
-    background-color: #ffe4c4; /* Darker cream color */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.course-card h3, .course-card p {
-    margin: 0;
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 .course-card h3 {
     font-size: 1.5rem;
     margin-bottom: 10px;
     color: #333;
+    text-align: center;
 }
 
 .course-card p {
-    font-size: 1rem;
-    line-height: 1.6;
-    color: #666;
-}
-
-.course-card .price {
-    font-weight: bold;
-    color: #20b358;
-}
-
-.course-card .instructor {
-    margin-top: 8px;
+    margin: 8px 0;
+    font-size: 0.95rem;
     color: #555;
 }
 
-.course-card .length,
-.course-card .requirements {
+.course-card .price {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #20b358;
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.course-card .category {
     margin-top: 8px;
-    color: #777;
+    color: #007bff;
+    font-weight: 500;
+    text-align: center;
+    font-style: italic;
 }
 
 .course-card .enroll-button {
-    margin-top: 10px;
-    padding: 10px 20px;
+    margin-top: 15px;
+    padding: 12px 20px;
     font-size: 1rem;
-    background-color: #2d302e;
-    color: #fff;
+    font-weight: bold;
+    text-align: center;
+    background-color: #744ffc;
+    color: #ffffff;
     border: none;
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
+    transition: background-color 0.3s;
 }
 
 .course-card .enroll-button:hover {
-    background-color: #585858;
+    background-color: #9068ff;
 }
 
-.error-message {
-    color: red;
-    text-align: center;
+@media (max-width: 768px) {
+    .course-card {
+        width: calc(50% - 30px); /* 2 tarjetas por fila */
+    }
 }
 
-.enrollment-message {
-    margin-top: 10px;
-    color: green;
-    text-align: center;
-}
-
-.no-courses-message {
-    text-align: center;
-    color: gray;
+@media (max-width: 480px) {
+    .course-card {
+        width: 100%; /* 1 tarjeta por fila */
+    }
 }

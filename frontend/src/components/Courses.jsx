@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Cookies from 'js-cookie';
 import './Courses.css';
 
@@ -9,41 +9,44 @@ const Courses = () => {
     const [enrollmentMessage, setEnrollmentMessage] = useState('');
 
     const userId = Cookies.get('userId');
-    
-    const fetchCourses = async (url) => {
+
+    const formatLength = (length) => {
+        if (!length || length === "N/A") return "N/A";
+
+        const parts = length.split(':');
+        const hours = parseInt(parts[0], 10) || 0;
+        const minutes = parseInt(parts[1], 10) || 0;
+        const seconds = parseInt(parts[2], 10) || 0;
+
+        return `${hours} hours ${minutes} minutes ${seconds} seconds`;
+    };
+
+    const fetchCourses = useCallback(async (url) => {
         try {
             const response = await fetch(url, { credentials: 'include' });
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.error || 'Error fetching courses');
             }
+
             const data = await response.json();
-            const formattedCourses = (data.courses || []).map(course => ({
+            if (!data || !data.courses) {
+                throw new Error('Invalid data received');
+            }
+
+            const formattedCourses = data.courses.map(course => ({
                 ...course,
                 length: formatLength(course.length),
+                categories: course.categories.map(cat => cat.name), // Extraer solo nombres de categorías
             }));
             setCourses(formattedCourses);
             setError(null);
         } catch (err) {
-            if (err.message === 'no courses found') {
-                setError('No courses found');
-            } else {
-                setError(err.message);
-            }
+            console.error(err);
+            setError(err.message);
             setCourses([]);
         }
-    };
-
-    const formatLength = (length) => {
-        if (!length || length === "N/A") return "N/A";
-        
-        const parts = length.split(':');
-        const hours = parseInt(parts[0], 10) || 0;
-        const minutes = parseInt(parts[1], 10) || 0;
-        const seconds = parseInt(parts[2], 10) || 0;
-    
-        return `${hours} hours ${minutes} minutes ${seconds} seconds`;
-    };
+    }, []); // Dependencies empty to avoid redefinition
 
     const handleSearch = (e) => {
         e.preventDefault();
@@ -55,7 +58,7 @@ const Courses = () => {
 
     useEffect(() => {
         fetchCourses('http://localhost:4000/courses');
-    }, []);
+    }, [fetchCourses]); // No warning now due to useCallback
 
     const handleEnroll = async (courseId) => {
         try {
@@ -99,13 +102,25 @@ const Courses = () => {
 
             {error && <p className="error-message">{error}</p>}
             {enrollmentMessage && <p className="success-message">{enrollmentMessage}</p>}
-            
+
             <ul className='course-list'>
                 {courses.length > 0 ? (
                     courses.map((course) => (
                         <li key={course.id} className="course-card">
                             <h3>{course.name ? course.name : "No name available"}</h3>
                             <p>{course.description ? course.description : "No description available"}</p>
+                            <p className="category">
+                                <strong>Categories:</strong>
+                                {course.categories.length > 0 ? (
+                                    <ul>
+                                        {course.categories.map((cat, index) => (
+                                            <li key={index}>{cat}</li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    "No categories available"
+                                )}
+                            </p>
                             <p className="price">Price: ${course.price ? course.price.toFixed(2) : "N/A"}</p>
                             <p className="instructor"><strong>Instructor:</strong> {course.instructor ? course.instructor : "N/A"}</p>
                             <p className="length"><strong>Length:</strong> {course.length ? course.length : "N/A"}</p>
@@ -117,6 +132,7 @@ const Courses = () => {
                     !error && <p>No courses available at the moment.</p>
                 )}
             </ul>
+
         </div>
     );
 };

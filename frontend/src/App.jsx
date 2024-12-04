@@ -1,6 +1,6 @@
 // App.jsx
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Main from './components/Main';
 import SignupForm from './components/SignUpForm';
@@ -9,6 +9,7 @@ import './App.css';
 import Navbar from './components/Navbar';
 import Courses from './components/Courses';
 import Profile from './components/Profile';
+import CourseComments from './components/CourseComments';
 
 function App() {
 
@@ -17,6 +18,7 @@ function App() {
       <Navbar />
       <main className='main-content'>
         <Routes>
+          <Route path='/course/:courseId/comments' element={<CourseComments />} />
           <Route path="/signup" element={<SignupForm />} />
           <Route path="/login" element={<LoginForm />} />
           <Route path="/" element={<Main />} />

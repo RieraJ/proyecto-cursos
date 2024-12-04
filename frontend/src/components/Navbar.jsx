@@ -14,12 +14,12 @@ const Navbar = () => {
             <ul>
                 <li>
                     <NavLink to="/login" className="custom-link">
-                        Iniciar Sesion
+                        <strong>Iniciar Sesion</strong>
                     </NavLink>
                 </li>
                 <li>
                     <NavLink to="/courses" className="custom-link">
-                        Cursos
+                    <strong>Cursos</strong>
                     </NavLink>
                 </li>
             </ul>
