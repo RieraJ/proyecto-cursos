@@ -13,7 +13,7 @@ type courseServiceInterface interface {
 	CreateCourse(Course dto.Course) (dto.Course, error)
 	UpdateCourseByID(id uint, Course dto.Course) (dto.Course, error)
 	DeleteCourseByID(id uint) error
-	GetUserCourses(userID uint) ([]dao.Course, error)
+	GetUserCourses(userID uint) ([]dto.Course, error)
 	SearchCourses(name string) ([]dto.Course, error)
 	GetAllCourses() ([]dto.Course, error)
 	GetUserInfo(id uint) (dto.UserInfo, error)
@@ -149,8 +149,8 @@ func (s *courseService) DeleteCourseByID(id uint) error {
 	return nil
 }
 
-func (s *courseService) GetUserCourses(userID uint) ([]dao.Course, error) {
-	courses, err := clients.GetUserCourses(userID)
+func (s *courseService) GetUserCourses(userID uint) ([]dto.Course, error) {
+	courses, err := clients.GetUserCoursesWithCategories(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +158,30 @@ func (s *courseService) GetUserCourses(userID uint) ([]dao.Course, error) {
 		return nil, errors.New("no courses found for the user")
 	}
 
-	return courses, nil
+	var coursesDTO []dto.Course
+	for _, course := range courses {
+		var categoriesDTO []dto.Category
+		for _, category := range course.Categories {
+			categoriesDTO = append(categoriesDTO, dto.Category{
+				ID:   category.ID,
+				Name: category.Name,
+			})
+		}
+
+		coursesDTO = append(coursesDTO, dto.Course{
+			ID:           course.ID,
+			Name:         course.Name,
+			Description:  course.Description,
+			Price:        course.Price,
+			Active:       course.Active,
+			Instructor:   course.Instructor,
+			Length:       course.Length,
+			Requirements: course.Requirements,
+			Categories:   categoriesDTO,
+		})
+	}
+
+	return coursesDTO, nil
 }
 
 func (s *courseService) SearchCourses(query string) ([]dto.Course, error) {

@@ -36,7 +36,7 @@ func EnrollUser(c *gin.Context) {
 		return
 	}
 
-	if err := services.InscriptionServiceInterfaceInstance.EnrollUser(request); err != nil {
+	if err := services.UserServiceInterfaceInstance.EnrollUser(request); err != nil {
 		if err.Error() == "user is already enrolled in this course" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		} else {

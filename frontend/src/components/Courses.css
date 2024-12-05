@@ -113,9 +113,8 @@
     margin-top: 15px;
     padding: 12px 20px;
     font-size: 1rem;
-    font-weight: bold;
     text-align: center;
-    background-color: #744ffc;
+    background-color: #7646fc;
     color: #ffffff;
     border: none;
     border-radius: 8px;
@@ -124,7 +123,7 @@
 }
 
 .course-card .enroll-button:hover {
-    background-color: #9068ff;
+    background-color: #6034fc;
 }
 
 @media (max-width: 768px) {
@@ -137,4 +136,42 @@
     .course-card {
         width: 100%; /* 1 tarjeta por fila */
     }
+}
+
+.course-card .view-comments-button {
+    margin-top: 10px;
+    padding: 10px 15px;
+    font-size: 0.9rem;
+    background-color: #28a745;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.course-card .view-comments-button:hover {
+    background-color: #218838;
+}
+
+.course-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.create-course-button {
+    background-color: #7644ff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-bottom: 20px;
+    transition: background-color 0.3s;
+}
+
+.create-course-button:hover {
+    background-color: #441bb6;
 }

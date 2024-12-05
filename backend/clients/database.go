@@ -124,9 +124,9 @@ func GetUserInscription(userID uint, courseID uint) (*dao.CourseInscription, err
 	return &inscription, result.Error
 }
 
-func GetUserCourses(userID uint) ([]dao.Course, error) {
+func GetUserCoursesWithCategories(userID uint) ([]dao.Course, error) {
 	var courses []dao.Course
-	result := DB.Table("courses").
+	result := DB.Preload("Categories").
 		Joins("JOIN course_inscriptions ON courses.id = course_inscriptions.course_id").
 		Where("course_inscriptions.user_id = ?", userID).
 		Find(&courses)

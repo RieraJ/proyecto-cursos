@@ -5,14 +5,14 @@ type Comment struct {
 	UserID   uint   `json:"user_id"`
 	CourseID uint   `json:"course_id"`
 	Content  string `json:"content"`
-	Image    []byte `json:"image"`
+	Image    string `json:"image"`
 }
 
 type CommentRequest struct {
-	UserID   uint   `json:"user_id"`
-	CourseID uint   `json:"course_id"`
-	Content  string `json:"content"`
-	Image    []byte `json:"image"`
+	UserID   uint   `json:"user_id" form:"user_id"`
+	CourseID uint   `json:"course_id" form:"course_id"`
+	Content  string `json:"content" form:"content"`
+	Image    string `json:"image" form:"image"`
 }
 
 type CommentResponse struct {

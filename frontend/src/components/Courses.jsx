@@ -1,14 +1,31 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Cookies from 'js-cookie';
 import './Courses.css';
+import { useNavigate } from 'react-router-dom';
 
 const Courses = () => {
+    const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
     const [courses, setCourses] = useState([]);
     const [error, setError] = useState(null);
     const [enrollmentMessage, setEnrollmentMessage] = useState('');
+    const [userType, setUserType] = useState(null); // Estado para el tipo de usuario
 
     const userId = Cookies.get('userId');
+
+    const fetchUserInfo = useCallback(async () => {
+        try {
+            const response = await fetch('http://localhost:4000/user-info', {
+                credentials: 'include',
+            });
+            if (!response.ok) throw new Error('Failed to fetch user info');
+
+            const data = await response.json();
+            setUserType(data.userInfo.userType); // Asume que el backend devuelve `{ userInfo: { userType: 'admin' } }`
+        } catch (err) {
+            console.error('Error fetching user info:', err);
+        }
+    }, []);
 
     const formatLength = (length) => {
         if (!length || length === "N/A") return "N/A";
@@ -37,7 +54,7 @@ const Courses = () => {
             const formattedCourses = data.courses.map(course => ({
                 ...course,
                 length: formatLength(course.length),
-                categories: course.categories.map(cat => cat.name), // Extraer solo nombres de categorías
+                categories: course.categories.map(cat => cat.name),
             }));
             setCourses(formattedCourses);
             setError(null);
@@ -46,7 +63,12 @@ const Courses = () => {
             setError(err.message);
             setCourses([]);
         }
-    }, []); // Dependencies empty to avoid redefinition
+    }, []);
+
+    useEffect(() => {
+        fetchUserInfo(); // Llama al endpoint para obtener el tipo de usuario
+        fetchCourses('http://localhost:4000/courses');
+    }, [fetchUserInfo, fetchCourses]);
 
     const handleSearch = (e) => {
         e.preventDefault();
@@ -55,10 +77,6 @@ const Courses = () => {
             : `http://localhost:4000/courses`;
         fetchCourses(url);
     };
-
-    useEffect(() => {
-        fetchCourses('http://localhost:4000/courses');
-    }, [fetchCourses]); // No warning now due to useCallback
 
     const handleEnroll = async (courseId) => {
         try {
@@ -87,8 +105,26 @@ const Courses = () => {
         }
     };
 
+    const handleViewComments = (courseId) => {
+        navigate(`/course/${courseId}/comments`);
+    };
+
+    const handleCreateCourse = () => {
+        navigate('/create-course');
+    };
+
     return (
         <div className="courses-container">
+            {/* Mostrar botón si el usuario es admin */}
+            {userType === 'admin' && (
+                <button
+                    className="create-course-button"
+                    onClick={handleCreateCourse}
+                >
+                    Create Course
+                </button>
+            )}
+
             <form className="search-form" onSubmit={handleSearch}>
                 <input
                     type="text"
@@ -121,18 +157,36 @@ const Courses = () => {
                                     "No categories available"
                                 )}
                             </p>
-                            <p className="price">Price: ${course.price ? course.price.toFixed(2) : "N/A"}</p>
-                            <p className="instructor"><strong>Instructor:</strong> {course.instructor ? course.instructor : "N/A"}</p>
-                            <p className="length"><strong>Length:</strong> {course.length ? course.length : "N/A"}</p>
-                            <p className="requirements"><strong>Requirements:</strong> {course.requirements ? course.requirements : "N/A"}</p>
-                            <button className="enroll-button" onClick={() => handleEnroll(course.id)}>Enroll</button>
+                            <p className="price">
+                                Price: ${course.price ? course.price.toFixed(2) : "N/A"}
+                            </p>
+                            <p className="instructor">
+                                <strong>Instructor:</strong> {course.instructor ? course.instructor : "N/A"}
+                            </p>
+                            <p className="length">
+                                <strong>Length:</strong> {course.length ? course.length : "N/A"}
+                            </p>
+                            <p className="requirements">
+                                <strong>Requirements:</strong> {course.requirements ? course.requirements : "N/A"}
+                            </p>
+                            <button
+                                className="enroll-button"
+                                onClick={() => handleEnroll(course.id)}
+                            >
+                                Enroll
+                            </button>
+                            <button
+                                className="view-comments-button"
+                                onClick={() => handleViewComments(course.id)}
+                            >
+                                View Comments
+                            </button>
                         </li>
                     ))
                 ) : (
                     !error && <p>No courses available at the moment.</p>
                 )}
             </ul>
-
         </div>
     );
 };

@@ -13,6 +13,8 @@ func mapUrls() {
 	router.POST("/signup", users.Signup)
 	router.POST("/login", users.Login)
 	router.GET("/user-info", middleware.RequireAuth, courses.GetUserInfo)
+	router.GET("/users", middleware.RequireAuth, middleware.RequireAdmin, users.GetAllUsers)
+	router.PUT("/update-user-type", middleware.RequireAuth, middleware.RequireAdmin, users.UpdateUserType)
 
 	// Rutas para cursos
 	router.POST("/courses", middleware.RequireAuth, middleware.RequireAdmin, courses.CreateCourse)

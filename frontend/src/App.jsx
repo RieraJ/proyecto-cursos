@@ -10,6 +10,7 @@ import Navbar from './components/Navbar';
 import Courses from './components/Courses';
 import Profile from './components/Profile';
 import CourseComments from './components/CourseComments';
+import CreateCourse from './components/CreateCourse';
 
 function App() {
 
@@ -24,6 +25,7 @@ function App() {
           <Route path="/" element={<Main />} />
           <Route path="/courses" element={<Courses />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/create-course" element={<CreateCourse />} />
         </Routes>
       </main>
     </div>
