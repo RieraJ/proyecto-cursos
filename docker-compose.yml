@@ -1,0 +1,53 @@
+name: courses-app
+
+services:
+  mysql:
+    image: mysql:8.4.3
+    volumes:
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      - MYSQL_ROOT_PASSWORD=1234
+      - MYSQL_DATABASE=courses
+    networks:
+      - courses-app
+    ports:
+      - 3307:3306
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend:/app
+    networks:
+      - courses-app
+    ports:
+      - 4000:4000
+    depends_on:
+      - mysql
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    networks:
+      - courses-app
+    ports:
+      - 3000:3000
+    depends_on:
+      - api
+
+volumes:
+  mysql_data:
+networks:
+  courses-app:
+    driver: bridge

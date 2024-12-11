@@ -1,21 +1,39 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Cookies from 'js-cookie';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, } from 'react-router-dom';
 import './CourseComments.css'; // Necesitarás crear este archivo de estilos
+
+// const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:4000";
+
 
 const CourseComments = () => {
   const { courseId } = useParams();
+  const [userId, setUserId] = useState(null);
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [error, setError] = useState(null);
-  const [page, setPage] = useState(1);
+  const [page, ] = useState(1);
   const [, setTotalComments] = useState(0);
 
-  const userId = Cookies.get('userId');
-
-  const fetchComments = useCallback(async (courseId, pageNum = 1) => {
+  // Función para obtener el userId
+  const fetchUserInfo = async () => {
     try {
+      const response = await fetch('http://localhost:4000/user-info', {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch user info');
+
+      const data = await response.json();
+      setUserId(data.userInfo.ID); // Guardar el ID del usuario
+    } catch (error) {
+      console.error('Error fetching user info:', error);
+    }
+  };
+
+  const fetchComments = useCallback(async (_courseId, _pageNum = 1) => {
+    try {
+      // const response = await fetch(`${API_BASE_URL}/courses/${courseId}/comments`
       const response = await fetch(`http://localhost:4000/courses/${courseId}/comments`, {
         credentials: 'include'
       });
@@ -51,6 +69,7 @@ const CourseComments = () => {
   }, []);
 
   useEffect(() => {
+    fetchUserInfo();
     fetchComments(courseId, page);
   }, [courseId, page, fetchComments]);
 
@@ -62,6 +81,7 @@ const CourseComments = () => {
       return;
     }
 
+
     const formData = new FormData();
     formData.append('user_id', userId);
     formData.append('course_id', courseId);
@@ -72,10 +92,11 @@ const CourseComments = () => {
     }
 
     try {
+      // const response = await fetch(`${API_BASE_URL}/comments`
       const response = await fetch('http://localhost:4000/comments', {
         method: 'POST',
         credentials: 'include',
-        body: formData,
+        body: (formData),
       });
 
       if (response.ok) {

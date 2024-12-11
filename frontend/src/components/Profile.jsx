@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Cookies from 'js-cookie';
 import './Profile.css';
+
+// const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
 const Profile = () => {
     const navigate = useNavigate();
@@ -22,7 +23,7 @@ const Profile = () => {
 
     const fetchUserInfo = async () => {
         try {
-            const response = await fetch('http://localhost:4000/user-info', { credentials: 'include' });
+            const response = await fetch(`http://localhost:4000/user-info`, { credentials: 'include' });
             if (!response.ok) {
                 throw new Error('Error fetching user info');
             }

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import './SignUp.css';
 import { useNavigate } from 'react-router-dom';
 
+// const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:4000";
+
 function SignupForm() {
   const [formData, setFormData] = useState({
     name: '',
@@ -24,7 +26,7 @@ function SignupForm() {
     e.preventDefault();
 
     try {
-      const response = await fetch('http://localhost:4000/signup', {
+      const response = await fetch(`http://localhost:4000/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

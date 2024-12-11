@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './CreateCourse.css';
-import Cookies from 'js-cookie';
+
+// const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
 const CreateCourse = () => {
     const navigate = useNavigate();
@@ -60,7 +61,7 @@ const CreateCourse = () => {
         };
 
         try {
-            const response = await fetch('http://localhost:4000/courses', {
+            const response = await fetch(`http://localhost:4000/courses`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

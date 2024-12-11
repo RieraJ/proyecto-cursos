@@ -14,26 +14,28 @@ import (
 var DB *gorm.DB
 
 func ConnectDb() error {
-	// Connect to database
-	var err error
+	// Leer la configuración desde el entorno
 	dsn := os.Getenv("DB")
+	if dsn == "" {
+		return fmt.Errorf("database connection string is empty")
+	}
+
+	// Conectar a la base de datos
+	var err error
 	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
-		return fmt.Errorf("failed to connect database: %w", err)
+		return fmt.Errorf("failed to connect to database: %w", err)
 	}
-	/*
-		err = DB.AutoMigrate(&dao.Course{}, &dao.Category{})
-		if err != nil {
-			return fmt.Errorf("failed to migrate database: %w", err)
-		}
-	*/
-	/*
-		// Add index with maximum length
-		err = DB.Exec("CREATE UNIQUE INDEX idx_email ON users (email(50));").Error
-		if err != nil {
-			return fmt.Errorf("failed to create index: %w", err)
-		}
-	*/
+
+	// Registrar éxito
+	log.Println("Successfully connected to the database")
+
+	// Migraciones
+	err = DB.AutoMigrate(&dao.Course{}, &dao.Category{}, &dao.User{}, &dao.CourseInscription{}, &dao.Comment{})
+	if err != nil {
+		return fmt.Errorf("failed to migrate database: %w", err)
+	}
+
 	return nil
 }
 

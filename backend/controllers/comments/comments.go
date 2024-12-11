@@ -5,38 +5,49 @@ import (
 	"backend/services"
 	"encoding/base64"
 	"io"
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
 func CreateComment(c *gin.Context) {
-	var body dto.CommentRequest
-
-	// Parse form data
-	userID, _ := strconv.ParseUint(c.PostForm("user_id"), 10, 64)
-	courseID, _ := strconv.ParseUint(c.PostForm("course_id"), 10, 64)
+	userIDStr := c.PostForm("user_id")
+	courseIDStr := c.PostForm("course_id")
 	content := c.PostForm("content")
 
-	// Process image file
+	if courseIDStr == "" || content == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing required fields"})
+		return
+	}
+
+	// Leer userID y courseID como uint
+	userID, _ := strconv.ParseUint(userIDStr, 10, 64)
+
+	courseID, _ := strconv.ParseUint(courseIDStr, 10, 64)
+
+	// Procesar la imagen si existe
+	var imageBase64 string
 	file, err := c.FormFile("image")
-	var imageData []byte
 	if err == nil {
 		openedFile, err := file.Open()
 		if err != nil {
-			c.JSON(400, gin.H{"error": "Error opening file"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error opening file"})
 			return
 		}
 		defer openedFile.Close()
 
-		imageData, err = io.ReadAll(openedFile)
+		imageData, err := io.ReadAll(openedFile)
 		if err != nil {
-			c.JSON(400, gin.H{"error": "Error reading file"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error reading file"})
 			return
 		}
+
+		imageBase64 = base64.StdEncoding.EncodeToString(imageData)
 	}
-	imageBase64 := base64.StdEncoding.EncodeToString(imageData)
-	body = dto.CommentRequest{
+
+	// Crear el comentario usando el servicio
+	body := dto.CommentRequest{
 		UserID:   uint(userID),
 		CourseID: uint(courseID),
 		Content:  content,
@@ -45,11 +56,11 @@ func CreateComment(c *gin.Context) {
 
 	result, err := services.CommentServiceInterfaceInstance.CreateComment(body)
 	if err != nil {
-		c.JSON(401, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(200, gin.H{"message": result.Message})
+	c.JSON(http.StatusOK, gin.H{"message": result.Message})
 }
 
 func DeleteCommentByID(c *gin.Context) {

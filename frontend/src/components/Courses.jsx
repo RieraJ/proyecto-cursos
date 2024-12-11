@@ -3,6 +3,8 @@ import Cookies from 'js-cookie';
 import './Courses.css';
 import { useNavigate } from 'react-router-dom';
 
+//const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:4000";
+
 const Courses = () => {
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
@@ -15,13 +17,13 @@ const Courses = () => {
 
     const fetchUserInfo = useCallback(async () => {
         try {
-            const response = await fetch('http://localhost:4000/user-info', {
+            const response = await fetch(`http://localhost:4000/user-info`, {
                 credentials: 'include',
             });
             if (!response.ok) throw new Error('Failed to fetch user info');
 
             const data = await response.json();
-            setUserType(data.userInfo.userType); // Asume que el backend devuelve `{ userInfo: { userType: 'admin' } }`
+            setUserType(data.userInfo.userType);
         } catch (err) {
             console.error('Error fetching user info:', err);
         }
@@ -48,7 +50,7 @@ const Courses = () => {
 
             const data = await response.json();
             if (!data || !data.courses) {
-                throw new Error('Invalid data received');
+                throw new Error('No hay cursos disponibles');
             }
 
             const formattedCourses = data.courses.map(course => ({
@@ -67,7 +69,7 @@ const Courses = () => {
 
     useEffect(() => {
         fetchUserInfo(); // Llama al endpoint para obtener el tipo de usuario
-        fetchCourses('http://localhost:4000/courses');
+        fetchCourses(`http://localhost:4000/courses`);
     }, [fetchUserInfo, fetchCourses]);
 
     const handleSearch = (e) => {
