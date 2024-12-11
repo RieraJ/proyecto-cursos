@@ -21,6 +21,19 @@ var (
 )
 
 func (s *commentService) CreateComment(comment dto.CommentRequest) (dto.CommentResponse, error) {
+	// Obtain the user ID
+	_, err := clients.SelectUserbyID(comment.UserID)
+	if err != nil {
+		return dto.CommentResponse{Message: "User not found"}, err
+	}
+
+	// Obtain the course inscription
+	_, err = clients.GetCourseInscriptionByUserIDAndCourseID(comment.UserID, comment.CourseID)
+
+	if err != nil {
+		return dto.CommentResponse{Message: "User is not enrolled in the course"}, err
+	}
+
 	newComment := dao.Comment{
 		UserID:   comment.UserID,
 		CourseID: comment.CourseID,

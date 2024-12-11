@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Cookies from 'js-cookie';
 import { useParams, } from 'react-router-dom';
-import './CourseComments.css'; // Necesitarás crear este archivo de estilos
-
-// const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:4000";
-
+import './CourseComments.css';
 
 const CourseComments = () => {
   const { courseId } = useParams();
@@ -19,17 +16,16 @@ const CourseComments = () => {
   // Función para obtener el userId
   const fetchUserInfo = async () => {
     try {
-      const response = await fetch('http://localhost:4000/user-info', {
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error('Failed to fetch user info');
-
-      const data = await response.json();
-      setUserId(data.userInfo.ID); // Guardar el ID del usuario
-    } catch (error) {
-      console.error('Error fetching user info:', error);
+        const response = await fetch(`http://localhost:4000/user-info`, { credentials: 'include' });
+        if (!response.ok) {
+            throw new Error('Error fetching user info');
+        }
+        const data = await response.json();
+        setUserId(data.userInfo.id);
+    } catch (err) {
+        console.error('Error fetching user info:', err);
     }
-  };
+};
 
   const fetchComments = useCallback(async (_courseId, _pageNum = 1) => {
     try {

@@ -31,11 +31,12 @@ func ConnectDb() error {
 	log.Println("Successfully connected to the database")
 
 	// Migraciones
-	err = DB.AutoMigrate(&dao.Course{}, &dao.Category{}, &dao.User{}, &dao.CourseInscription{}, &dao.Comment{})
-	if err != nil {
-		return fmt.Errorf("failed to migrate database: %w", err)
-	}
-
+	/*
+		err = DB.AutoMigrate(&dao.Course{}, &dao.Category{}, &dao.User{}, &dao.CourseInscription{}, &dao.Comment{})
+		if err != nil {
+			return fmt.Errorf("failed to migrate database: %w", err)
+		}
+	*/
 	return nil
 }
 
@@ -251,4 +252,13 @@ func SearchCoursesWithCategories(name string) ([]dao.Course, error) {
 		return nil, err
 	}
 	return courses, nil
+}
+
+func GetCourseInscriptionByUserIDAndCourseID(userID, courseID uint) (*dao.CourseInscription, error) {
+	var inscription dao.CourseInscription
+	result := DB.Where("user_id = ? AND course_id = ?", userID, courseID).First(&inscription)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &inscription, nil
 }

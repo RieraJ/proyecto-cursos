@@ -32,6 +32,7 @@ const Profile = () => {
         } catch (err) {
             console.error('Error fetching user info:', err);
         }
+        console.log('User ID:', userId);
     };
 
     const fetchUserCourses = async () => {
