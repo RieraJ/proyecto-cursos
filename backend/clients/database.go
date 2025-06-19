@@ -52,6 +52,7 @@ func SelectUserByEmail(email string) (dao.User, error) {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return user, errors.New("user not found")
 		}
+		return user, result.Error
 	}
 	return user, nil
 }
