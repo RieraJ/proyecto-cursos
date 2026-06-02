@@ -66,6 +66,15 @@ func SelectUserbyID(id uint) (dao.User, error) {
 	return user, result.Error
 }
 
+func GetUsersByIDs(ids []uint) ([]dao.User, error) {
+	var users []dao.User
+	if len(ids) == 0 {
+		return users, nil
+	}
+	result := DB.Where("id IN ?", ids).Find(&users)
+	return users, result.Error
+}
+
 func GetAllUsers() (users []dao.User, err error) {
 	var allusers []dao.User
 	result := DB.Find(&allusers)
@@ -79,6 +88,16 @@ func UpdateUserType(userID uint, userType string) error {
 	result := DB.Model(&dao.User{}).
 		Where("id = ?", userID).
 		Update("user_type", userType)
+	return result.Error
+}
+
+func UpdateUser(userID uint, updates map[string]interface{}) error {
+	result := DB.Model(&dao.User{}).Where("id = ?", userID).Updates(updates)
+	return result.Error
+}
+
+func UpdateUserPhoto(userID uint, photo string) error {
+	result := DB.Model(&dao.User{}).Where("id = ?", userID).Update("image", photo)
 	return result.Error
 }
 

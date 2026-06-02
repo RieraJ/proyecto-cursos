@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import './SignUp.css';
 import { useNavigate } from 'react-router-dom';
-
-// const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:4000";
+import Swal from 'sweetalert2';
+import { API_URL } from '../config';
 
 function SignupForm() {
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     surname: '',
     email: '',
-    password: ''
+    password: '',
+    confirmPassword: ''
   });
 
   const handleChange = (e) => {
@@ -25,87 +27,128 @@ function SignupForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (formData.password.length < 8) {
+      Swal.fire({ icon: 'warning', title: 'Contraseña muy corta', text: 'La contraseña debe tener al menos 8 caracteres.' });
+      return;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      Swal.fire({ icon: 'warning', title: 'Las contraseñas no coinciden', text: 'Verificá que ambas contraseñas sean iguales.' });
+      return;
+    }
+
+    setLoading(true);
+    const { confirmPassword, ...payload } = formData;
+
     try {
-      const response = await fetch(`http://localhost:4000/signup`, {
+      const response = await fetch(`${API_URL}/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        console.log(data);
-        alert('Te has registrado correctamente. Por favor, logeate para continuar');
+        await Swal.fire({
+          icon: 'success',
+          title: '¡Registro Exitoso!',
+          text: 'Te has registrado correctamente.',
+          confirmButtonText: 'Ir a Login'
+        });
         navigate('/login');
       } else {
-        alert('Ya existe un usuario con ese email, intenta con otro email');
+        Swal.fire({
+          icon: 'error',
+          title: 'Error de Registro',
+          text: data.error || 'Ya existe un usuario con ese email.'
+        });
       }
     } catch (error) {
-      console.error('Error:', error);
-        alert('Ha ocurrido un error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Ha ocurrido un error inesperado.'
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div id="signup">
       <form id="formSignUp" onSubmit={handleSubmit}>
-        <h1>Sign Up</h1>
+        <h1>Crear Cuenta</h1>
         <div className="inputContainer">
+          <label htmlFor="name">Nombre</label>
           <input
             type="text"
             className="inputSignUp"
-            placeholder=" "
+            placeholder="Tu nombre"
             id="name"
             name="name"
             value={formData.name}
             onChange={handleChange}
             required
           />
-          <label htmlFor="name" className="labelSignUp">Name</label>
         </div>
         <div className="inputContainer">
+          <label htmlFor="surname">Apellido</label>
           <input
             type="text"
             className="inputSignUp"
-            placeholder=" "
+            placeholder="Tu apellido"
             id="surname"
             name="surname"
             value={formData.surname}
             onChange={handleChange}
             required
           />
-          <label htmlFor="surname" className="labelSignUp">Surname</label>
         </div>
         <div className="inputContainer">
+          <label htmlFor="email">Email</label>
           <input
             type="email"
             className="inputSignUp"
-            placeholder=" "
+            placeholder="tu@email.com"
             id="email"
             name="email"
             value={formData.email}
             onChange={handleChange}
             required
           />
-          <label htmlFor="email" className="labelSignUp">Email</label>
         </div>
         <div className="inputContainer">
+          <label htmlFor="password">Contraseña (mín. 8 caracteres)</label>
           <input
             type="password"
             className="inputSignUp"
-            placeholder=" "
+            placeholder="Mínimo 8 caracteres"
             id="password"
             name="password"
             value={formData.password}
             onChange={handleChange}
+            minLength={8}
             required
           />
-          <label htmlFor="password" className="labelSignUp">Password</label>
         </div>
-        <button type="submit" className="submit-btn">Sign Up</button>
+        <div className="inputContainer">
+          <label htmlFor="confirmPassword">Confirmar contraseña</label>
+          <input
+            type="password"
+            className="inputSignUp"
+            placeholder="Repetí tu contraseña"
+            id="confirmPassword"
+            name="confirmPassword"
+            value={formData.confirmPassword}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <button type="submit" className="submit-btn" disabled={loading}>
+          {loading ? 'Registrando...' : 'Crear Cuenta'}
+        </button>
       </form>
     </div>
   );

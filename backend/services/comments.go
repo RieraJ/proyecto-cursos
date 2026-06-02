@@ -11,7 +11,7 @@ type commentService struct{}
 
 type CommentServiceInterface interface {
 	CreateComment(comment dto.CommentRequest) (dto.CommentResponse, error)
-	DeleteCommentByID(id uint) error
+	DeleteCommentByID(id uint, callerID uint, isAdmin bool) error
 	GetUserComments(userID uint) ([]dto.Comment, error)
 	GetCourseComments(courseID uint) ([]dto.Comment, error)
 }
@@ -21,15 +21,12 @@ var (
 )
 
 func (s *commentService) CreateComment(comment dto.CommentRequest) (dto.CommentResponse, error) {
-	// Obtain the user ID
 	_, err := clients.SelectUserbyID(comment.UserID)
 	if err != nil {
 		return dto.CommentResponse{Message: "User not found"}, err
 	}
 
-	// Obtain the course inscription
 	_, err = clients.GetCourseInscriptionByUserIDAndCourseID(comment.UserID, comment.CourseID)
-
 	if err != nil {
 		return dto.CommentResponse{Message: "User is not enrolled in the course"}, err
 	}
@@ -41,7 +38,6 @@ func (s *commentService) CreateComment(comment dto.CommentRequest) (dto.CommentR
 		Image:    comment.Image,
 	}
 
-	// Save the comment in the DB
 	if err := clients.CreateComment(newComment); err != nil {
 		return dto.CommentResponse{Message: "Error while creating comment"}, err
 	}
@@ -49,18 +45,17 @@ func (s *commentService) CreateComment(comment dto.CommentRequest) (dto.CommentR
 	return dto.CommentResponse{Message: "Comment created successfully"}, nil
 }
 
-func (s *commentService) DeleteCommentByID(id uint) error {
-	_, err := clients.GetCommentByID(id)
+func (s *commentService) DeleteCommentByID(id uint, callerID uint, isAdmin bool) error {
+	comment, err := clients.GetCommentByID(id)
 	if err != nil {
 		return errors.New("comment not found")
 	}
 
-	// Delete the comment in the DB
-	if err := clients.DeleteCommentByID(id); err != nil {
-		return err
+	if !isAdmin && comment.UserID != callerID {
+		return errors.New("forbidden")
 	}
 
-	return nil
+	return clients.DeleteCommentByID(id)
 }
 
 func (s *commentService) GetUserComments(userID uint) ([]dto.Comment, error) {
@@ -69,7 +64,7 @@ func (s *commentService) GetUserComments(userID uint) ([]dto.Comment, error) {
 		return nil, err
 	}
 
-	return transformCommentsToDTO(comments), nil
+	return enrichCommentsWithUserInfo(comments)
 }
 
 func (s *commentService) GetCourseComments(courseID uint) ([]dto.Comment, error) {
@@ -78,27 +73,43 @@ func (s *commentService) GetCourseComments(courseID uint) ([]dto.Comment, error)
 		return nil, err
 	}
 
-	return transformCommentsToDTO(comments), nil
+	return enrichCommentsWithUserInfo(comments)
 }
 
-// Helper function to transform comments to DTO
-func transformCommentsToDTO(comments []dao.Comment) []dto.Comment {
+func enrichCommentsWithUserInfo(comments []dao.Comment) ([]dto.Comment, error) {
+	userIDSet := make(map[uint]bool)
+	for _, c := range comments {
+		userIDSet[c.UserID] = true
+	}
+	userIDs := make([]uint, 0, len(userIDSet))
+	for id := range userIDSet {
+		userIDs = append(userIDs, id)
+	}
+
+	users, err := clients.GetUsersByIDs(userIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	userMap := make(map[uint]dao.User)
+	for _, u := range users {
+		userMap[u.ID] = u
+	}
+
 	var dtoComments []dto.Comment
-
 	for _, comment := range comments {
-		var imageBase64 string
-		if len(comment.Image) > 0 {
-			imageBase64 = comment.Image
-		}
-
+		user := userMap[comment.UserID]
 		dtoComments = append(dtoComments, dto.Comment{
-			ID:       comment.ID,
-			UserID:   comment.UserID,
-			CourseID: comment.CourseID,
-			Content:  comment.Content,
-			Image:    imageBase64,
+			ID:          comment.ID,
+			UserID:      comment.UserID,
+			CourseID:    comment.CourseID,
+			Content:     comment.Content,
+			Image:       comment.Image,
+			UserName:    user.Name,
+			UserSurname: user.Surname,
+			UserImage:   user.Image,
 		})
 	}
 
-	return dtoComments
+	return dtoComments, nil
 }

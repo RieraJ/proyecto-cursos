@@ -9,4 +9,5 @@ type User struct {
 	Email    string `gorm:"uniqueIndex;idx_email;unique"`
 	Password string `gorm:"not null"`
 	UserType string `gorm:"not null"`
+	Image    string `gorm:"type:longblob"`
 }

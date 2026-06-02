@@ -12,8 +12,11 @@ func mapUrls() {
 	// Rutas para usuarios
 	router.POST("/signup", users.Signup)
 	router.POST("/login", users.Login)
+	router.POST("/logout", users.Logout)
 	router.GET("/user-info", middleware.RequireAuth, courses.GetUserInfo)
 	router.GET("/users", middleware.RequireAuth, middleware.RequireAdmin, users.GetAllUsers)
+	router.PUT("/users/me", middleware.RequireAuth, users.UpdateUserMe)
+	router.PUT("/users/me/photo", middleware.RequireAuth, users.UpdateUserPhoto)
 	router.PUT("/update-user-type", middleware.RequireAuth, middleware.RequireAdmin, users.UpdateUserType)
 
 	// Rutas para cursos
@@ -31,5 +34,5 @@ func mapUrls() {
 	router.POST("/comments", middleware.RequireAuth, comments.CreateComment)
 	router.DELETE("/comments/:id", middleware.RequireAuth, comments.DeleteCommentByID)
 	router.GET("/users/:id/comments", middleware.RequireAuth, comments.GetUserComments)
-	router.GET("/courses/:id/comments", comments.GetCourseComments)
+	router.GET("/courses/:id/comments", middleware.RequireAuth, comments.GetCourseComments)
 }

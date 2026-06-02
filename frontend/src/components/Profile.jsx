@@ -1,111 +1,170 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FaDollarSign, FaUserTie, FaClock, FaListUl, FaComments } from 'react-icons/fa';
 import './Profile.css';
-
-// const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:4000";
+import './Courses.css';
+import { API_URL } from '../config';
+import { formatLength } from '../utils';
 
 const Profile = () => {
     const navigate = useNavigate();
     const [courses, setCourses] = useState([]);
     const [error, setError] = useState(null);
     const [userId, setUserId] = useState(null);
-
-    const formatLength = (length) => {
-        if (!length || length === "N/A") return "N/A";
-
-        const parts = length.split(':');
-        const hours = parseInt(parts[0], 10) || 0;
-        const minutes = parseInt(parts[1], 10) || 0;
-        const seconds = parseInt(parts[2], 10) || 0;
-
-        return `${hours} hours ${minutes} minutes ${seconds} seconds`;
-    };
+    const [selectedCourse, setSelectedCourse] = useState(null);
 
     const fetchUserInfo = async () => {
         try {
-            const response = await fetch(`http://localhost:4000/user-info`, { credentials: 'include' });
-            if (!response.ok) {
-                throw new Error('Error fetching user info');
-            }
+            const response = await fetch(`${API_URL}/user-info`, { credentials: 'include' });
+            if (!response.ok) throw new Error('Error fetching user info');
             const data = await response.json();
             setUserId(data.userInfo.id);
         } catch (err) {
             console.error('Error fetching user info:', err);
         }
-        console.log('User ID:', userId);
     };
 
-    const fetchUserCourses = async () => {
+    const fetchUserCourses = useCallback(async () => {
         if (!userId) return;
         try {
-            const response = await fetch(`http://localhost:4000/users/${userId}/courses`, { credentials: 'include' });
-            if (!response.ok) {
-                throw new Error('Error fetching user courses');
-            }
+            const response = await fetch(`${API_URL}/users/${userId}/courses`, { credentials: 'include' });
+            if (!response.ok) throw new Error('Error fetching user courses');
             const data = await response.json();
-            
             const formattedCourses = data.courses.map(course => ({
                 ...course,
                 length: formatLength(course.length),
-                categories: course.categories.map(cat => cat.name), // Extraer solo nombres de categorías
+                categories: course.categories.map(cat => cat.name),
             }));
-
             setCourses(formattedCourses);
         } catch (err) {
             setError('No courses found for the user');
             setCourses([]);
         }
-    };
+    }, [userId]);
 
-    const handleViewComments = (courseId) => {
+    useEffect(() => { fetchUserInfo(); }, []);
+    useEffect(() => { fetchUserCourses(); }, [userId, fetchUserCourses]);
+
+    const openModal = (course) => setSelectedCourse(course);
+    const closeModal = () => setSelectedCourse(null);
+
+    const handleViewComments = (e, courseId) => {
+        e.stopPropagation();
         navigate(`/course/${courseId}/comments`);
     };
 
-    useEffect(() => {
-        fetchUserInfo();
-    }, []);
-
-    useEffect(() => {
-        fetchUserCourses();
-    }, [userId]);
-
     return (
-        <div className="profile-container">
-            <h1>Your Courses</h1>
+        <div className="courses-container">
+            <header className="courses-page-header">
+                <h1 className="courses-page-title">Mis <span>Cursos</span></h1>
+                <p className="courses-page-subtitle">Los cursos en los que estás inscripto</p>
+            </header>
+
             {error && <p className="error-message">{error}</p>}
-            
-            <ul className='course-list'>
-                {courses.map((course) => (
-                    <li key={course.id} className="course-card">
-                        <h3>{course.name ? course.name : "No name available"}</h3>
-                        <p>{course.description ? course.description : "No description available"}</p>
-                        <p className="category">
-                            <strong>Categories:</strong>
-                            {course.categories.length > 0 ? (
-                                <ul>
-                                    {course.categories.map((cat, index) => (
-                                        <li key={index}>{cat}</li>
-                                    ))}
-                                </ul>
+
+            <ul className="course-list">
+                {courses.length > 0 ? courses.map((course) => (
+                    <li
+                        key={course.id}
+                        className="course-card"
+                        onClick={() => openModal(course)}
+                    >
+                        <div className="course-card-image">
+                            {course.image ? (
+                                <img
+                                    src={`data:image/png;base64,${course.image}`}
+                                    alt={course.name}
+                                    className="course-img"
+                                />
                             ) : (
-                                "No categories available"
+                                <div className="course-img-placeholder" />
                             )}
-                        </p>
-                        <p className="price">Price: ${course.price ? course.price.toFixed(2) : "N/A"}</p>
-                        <p className="instructor"><strong>Instructor:</strong> {course.instructor ? course.instructor : "N/A"}</p>
-                        <p className="length"><strong>Length:</strong> {course.length ? course.length : "N/A"}</p>
-                        <p className="requirements"><strong>Requirements:</strong> {course.requirements ? course.requirements : "N/A"}</p>
-                        <div className="course-actions">
-                            <button 
-                                className="view-comments-button" 
-                                onClick={() => handleViewComments(course.id)}
-                            >
-                                View Comments
-                            </button>
+                        </div>
+                        <div className="course-card-body">
+                            <h3 className="course-card-title">{course.name || "Sin título"}</h3>
                         </div>
                     </li>
-                ))}
+                )) : (
+                    !error && <p className="courses-empty">Todavía no estás inscripto en ningún curso.</p>
+                )}
             </ul>
+
+            {selectedCourse && (
+                <div
+                    className="course-modal-overlay"
+                    onClick={closeModal}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={`Detalle: ${selectedCourse.name}`}
+                >
+                    <div className="course-modal" onClick={(e) => e.stopPropagation()}>
+                        <button
+                            className="course-modal-close"
+                            onClick={closeModal}
+                            aria-label="Cerrar modal"
+                        >
+                            ✕
+                        </button>
+
+                        <div className="course-modal-image">
+                            {selectedCourse.image ? (
+                                <img
+                                    src={`data:image/png;base64,${selectedCourse.image}`}
+                                    alt={selectedCourse.name}
+                                    className="course-modal-img"
+                                />
+                            ) : (
+                                <div className="course-img-placeholder course-modal-img-placeholder" />
+                            )}
+                        </div>
+
+                        <div className="course-modal-body">
+                            <h2 className="course-modal-title">{selectedCourse.name}</h2>
+                            <p className="course-modal-description">{selectedCourse.description}</p>
+
+                            <div className="course-modal-meta">
+                                <span className="course-modal-price">
+                                    <FaDollarSign />
+                                    {selectedCourse.price ? selectedCourse.price.toFixed(2) : "N/A"}
+                                </span>
+                                <span className="course-modal-instructor">
+                                    <FaUserTie /> {selectedCourse.instructor || "N/A"}
+                                </span>
+                            </div>
+
+                            <div className="course-modal-fields">
+                                <p className="course-modal-field">
+                                    <FaClock className="field-icon" />
+                                    <span>{selectedCourse.length || "N/A"}</span>
+                                </p>
+                                {selectedCourse.requirements && (
+                                    <p className="course-modal-field">
+                                        <FaListUl className="field-icon" />
+                                        <span>{selectedCourse.requirements}</span>
+                                    </p>
+                                )}
+                            </div>
+
+                            {selectedCourse.categories.length > 0 && (
+                                <div className="course-modal-categories">
+                                    {selectedCourse.categories.map((cat, i) => (
+                                        <span key={i} className="course-category-pill">{cat}</span>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="course-modal-actions">
+                                <button
+                                    className="view-comments-button"
+                                    onClick={(e) => handleViewComments(e, selectedCourse.id)}
+                                >
+                                    <FaComments /> Comentarios
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

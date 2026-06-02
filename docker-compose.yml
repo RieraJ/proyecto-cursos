@@ -1,55 +1,65 @@
 name: courses-app
 
-#version: '3.8'
-
 services:
   mysql:
     image: mysql:8.4.3
-    volumes:
-      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "127.0.0.1:3307:3306" 
     environment:
-      - MYSQL_ROOT_PASSWORD=1234
+      - MYSQL_ROOT_PASSWORD=root
       - MYSQL_DATABASE=courses
+    volumes:
+      - mysql_data:/var/lib/mysql # PERSISTENCIA: Si no, los datos se borran al apagar
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - courses-app
-    ports:
-      - 3307:3306
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      timeout: 5s
+      retries: 5
+      interval: 10s
 
   api:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: dev # Apunta a la etapa de desarrollo
     restart: unless-stopped
     env_file:
       - ./backend/.env
     volumes:
-      - ./backend:/app
+      - ./backend:/app # Hot Reloading
     networks:
       - courses-app
     ports:
-      - 4000:4000
+      - "4000:4000"
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy # Espera a que la DB esté LISTA, no solo arrancada
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: dev # Hot reload con CRA dev server, igual que el backend con air
     restart: unless-stopped
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     environment:
       - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+      - WDS_SOCKET_PORT=0
+    volumes:
+      - ./frontend/src:/app/src       # Hot reload del código fuente
+      - ./frontend/public:/app/public # Hot reload de assets públicos
     networks:
       - courses-app
     ports:
-      - 3000:3000
+      - "3000:3000" # CRA dev server corre en 3000 (antes era nginx en 80)
     depends_on:
       - api
 
 volumes:
-  mysql_data:
+  mysql_data: # Definido correctamente aquí
+
 networks:
   courses-app:
     driver: bridge

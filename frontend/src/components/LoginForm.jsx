@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
-import './Login.css'
 import { useNavigate } from 'react-router-dom';
-
-
-// const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:4000";
+import './Login.css';
+import Swal from 'sweetalert2';
+import { API_URL } from '../config';
 
 function LoginForm() {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const [user, setUser] = useState({
     email: '',
     password: ''
 });
-
-const navigate = useNavigate();
 
 const handleChange = (e) => {
     const { name, value } = e.target;
@@ -23,9 +22,10 @@ const handleChange = (e) => {
 
 const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
     try {
-        const response = await fetch(`http://localhost:4000/login`, {
+        const response = await fetch(`${API_URL}/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -37,15 +37,29 @@ const handleSubmit = async (e) => {
         const data = await response.json();
 
         if (response.ok) {
-            console.log(data);
-            alert('You have logged in successfully');
+            await Swal.fire({
+                icon: 'success',
+                title: '¡Ingreso Exitoso!',
+                text: 'Has iniciado sesión correctamente.',
+                timer: 1500,
+                showConfirmButton: false
+            });
             navigate('/');
         } else {
-            alert('Invalid email or password');
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de Login',
+                text: data.error || 'Email o contraseña inválidos.'
+            });
         }
     } catch (error) {
-        console.error('Error:', error);
-        alert('An error occurred');
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Ha ocurrido un error inesperado.'
+        });
+    } finally {
+        setLoading(false);
     }
 };
 
@@ -53,35 +67,38 @@ const handleSubmit = async (e) => {
   return (
     <div id="login">
       <form id="formLogin" onSubmit={handleSubmit}>
-        <h1>Login</h1>
+        <h1>Iniciar Sesión</h1>
+        <p className="form-subtitle">Accedé a tu cuenta de EduCursos</p>
         <div className="inputContainer">
+          <label htmlFor="email">Email</label>
           <input
             type="email"
             className="inputLogin"
-            placeholder=" "
+            placeholder="tu@email.com"
             id="email"
             name='email'
             onChange={handleChange}
             value={user.email}
             required
           />
-          <label htmlFor="email" className="labelLogin">Email</label>
         </div>
         <div className="inputContainer">
+          <label htmlFor="password">Contraseña</label>
           <input
             type="password"
             className="inputLogin"
-            placeholder=" "
+            placeholder="Tu contraseña"
             id="password"
             name='password'
             onChange={handleChange}
             value={user.password}
             required
           />
-          <label htmlFor="password" className="labelLogin">Password</label>
         </div>
-        <button type="submit" className="submit-btn">Login</button>
-        <p className='signup'>Don't have an account? <a href="/signup">Register</a></p>
+        <button type="submit" className="submit-btn" disabled={loading}>
+          {loading ? 'Ingresando...' : 'Iniciar Sesión'}
+        </button>
+        <p className='signup'>¿No tenés cuenta? <a href="/signup">Registrate</a></p>
       </form>
     </div>
   );

@@ -12,4 +12,5 @@ type Course struct {
 	Length       string     `gorm:"not null"`
 	Requirements string     `gorm:"not null"`
 	Categories   []Category `gorm:"many2many:course_categories"`
+	Image        string     `gorm:"type:longblob"`
 }

@@ -1,38 +1,33 @@
 package controllers
 
 import (
+	"backend/dao"
 	"backend/dto"
 	"backend/services"
+	"log"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
 func EnrollUser(c *gin.Context) {
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	currentUser := user.(dao.User)
+
 	var request dto.InscriptionRequest
 	if err := c.BindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format"})
 		return
 	}
 
-	// Obtener el userID de la cookie
-	userIdStr, err := c.Cookie("userId")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "User ID cookie not found"})
-		return
-	}
+	request.UserID = currentUser.ID
 
-	userId, err := strconv.Atoi(userIdStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
-
-	request.UserID = uint(userId)
-
-	if request.UserID == 0 || request.CourseID == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "UserID and CourseID are required"})
+	if request.CourseID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "CourseID is required"})
 		return
 	}
 
@@ -40,7 +35,8 @@ func EnrollUser(c *gin.Context) {
 		if err.Error() == "user is already enrolled in this course" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to enroll user: " + err.Error()})
+			log.Printf("EnrollUser error: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to enroll user"})
 		}
 		return
 	}
