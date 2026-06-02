@@ -1,11 +1,14 @@
 package dto
 
 type Comment struct {
-	ID       uint   `json:"id"`
-	UserID   uint   `json:"user_id"`
-	CourseID uint   `json:"course_id"`
-	Content  string `json:"content"`
-	Image    string `json:"image"`
+	ID          uint   `json:"id"`
+	UserID      uint   `json:"user_id"`
+	CourseID    uint   `json:"course_id"`
+	Content     string `json:"content"`
+	Image       string `json:"image"`
+	UserName    string `json:"user_name"`
+	UserSurname string `json:"user_surname"`
+	UserImage   string `json:"user_image"`
 }
 
 type CommentRequest struct {

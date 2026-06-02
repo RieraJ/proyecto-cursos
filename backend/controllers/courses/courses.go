@@ -5,97 +5,143 @@ import (
 	"backend/dao"
 	"backend/dto"
 	"backend/services"
+	"encoding/base64"
+	"encoding/json"
+	"io"
+	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
+const maxImageBytes = 5 << 20 // 5 MB
+
 func CreateCourse(c *gin.Context) {
-	// Get the body of the POST request
-	var body dto.Course
-	// Unmarshal the JSON body into a new Course struct
-	if err := c.ShouldBindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	name := c.PostForm("name")
+	description := c.PostForm("description")
+	priceStr := c.PostForm("price")
+	instructor := c.PostForm("instructor")
+	length := c.PostForm("length")
+	requirements := c.PostForm("requirements")
+	categoriesJSON := c.PostForm("categories")
+
+	if name == "" || description == "" || priceStr == "" || instructor == "" || length == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing required fields"})
 		return
 	}
 
-	// Call the CreateCourse service
+	price, err := strconv.ParseFloat(priceStr, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid price format"})
+		return
+	}
+
+	var categories []dto.Category
+	if categoriesJSON != "" {
+		if err := json.Unmarshal([]byte(categoriesJSON), &categories); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid categories format"})
+			return
+		}
+	}
+
+	var imageBase64 string
+	file, err := c.FormFile("image")
+	if err == nil {
+		if file.Size > maxImageBytes {
+			c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "Image exceeds 5 MB limit"})
+			return
+		}
+		openedFile, err := file.Open()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error processing image"})
+			return
+		}
+		defer openedFile.Close()
+
+		imageData, err := io.ReadAll(io.LimitReader(openedFile, maxImageBytes))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error processing image"})
+			return
+		}
+		imageBase64 = base64.StdEncoding.EncodeToString(imageData)
+	}
+
+	body := dto.Course{
+		Name:         name,
+		Description:  description,
+		Price:        price,
+		Active:       true,
+		Instructor:   instructor,
+		Length:       length,
+		Requirements: requirements,
+		Categories:   categories,
+		Image:        imageBase64,
+	}
+
 	result, err := services.CourseServiceInterfaceInstance.CreateCourse(body)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		log.Printf("CreateCourse error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create course"})
 		return
 	}
 
 	course, err := clients.ObtainCourseByName(result.Name)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		log.Printf("ObtainCourseByName error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve created course"})
 		return
 	}
 
-	courseID := course.ID
-	result.ID = courseID
-
-	// Return the created course in the response
+	result.ID = course.ID
 	c.JSON(http.StatusOK, gin.H{"message": "Course successfully created", "course": result})
 }
 
 func UpdateCourseByID(c *gin.Context) {
-	// Get the body of the PUT request
 	var body dto.Course
-	// Unmarshal the JSON body into a new Course struct
 	if err := c.ShouldBindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
-	// Get the ID from the URL
 	id := c.Param("id")
-
-	// Convert the ID to an unsigned integer
 	idUint, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid course ID"})
 		return
 	}
 
-	// Call the UpdateCourseByID service
 	result, err := services.CourseServiceInterfaceInstance.UpdateCourseByID(uint(idUint), body)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		log.Printf("UpdateCourseByID error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update course"})
 		return
 	}
 
-	// Return the updated course in the response
 	c.JSON(http.StatusOK, gin.H{"message": "Course successfully updated", "course": result})
 }
 
 func DeleteCourseByID(c *gin.Context) {
-	// Get the ID from the URL
 	id := c.Param("id")
-
-	// Convert the ID to an unsigned integer
 	idUint, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid course ID"})
 		return
 	}
 
-	// Call the DeleteCourseByID service
-	err = services.CourseServiceInterfaceInstance.DeleteCourseByID(uint(idUint))
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+	if err := services.CourseServiceInterfaceInstance.DeleteCourseByID(uint(idUint)); err != nil {
+		log.Printf("DeleteCourseByID error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete course"})
 		return
 	}
 
-	// Return the deleted course in the response
 	c.JSON(http.StatusOK, gin.H{"message": "Course successfully deleted"})
 }
 
 func GetUserCourses(c *gin.Context) {
 	user, exists := c.Get("user")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
@@ -106,7 +152,6 @@ func GetUserCourses(c *gin.Context) {
 		return
 	}
 
-	// Convert dao.Course to dto.Course and include categories
 	var coursesDTO []dto.Course
 	for _, course := range courses {
 		var categoriesDTO []dto.Category
@@ -127,6 +172,7 @@ func GetUserCourses(c *gin.Context) {
 			Length:       course.Length,
 			Requirements: course.Requirements,
 			Categories:   categoriesDTO,
+			Image:        course.Image,
 		})
 	}
 
@@ -143,7 +189,8 @@ func SearchCourses(c *gin.Context) {
 
 	courses, err := services.CourseServiceInterfaceInstance.SearchCourses(name)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		log.Printf("SearchCourses error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to search courses"})
 		return
 	}
 
@@ -159,14 +206,14 @@ func GetAllCourses(c *gin.Context) {
 	courses, err := services.CourseServiceInterfaceInstance.GetAllCourses()
 	if err != nil {
 		if err.Error() == "no courses found" {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			c.JSON(http.StatusNotFound, gin.H{"error": "No courses found"})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			log.Printf("GetAllCourses error: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve courses"})
 		}
 		return
 	}
 
-	// Formatear la respuesta para incluir categorías
 	var formattedCourses []dto.Course
 	for _, course := range courses {
 		var categoriesDTO []dto.Category
@@ -187,6 +234,7 @@ func GetAllCourses(c *gin.Context) {
 			Length:       course.Length,
 			Requirements: course.Requirements,
 			Categories:   categoriesDTO,
+			Image:        course.Image,
 		})
 	}
 
@@ -194,23 +242,20 @@ func GetAllCourses(c *gin.Context) {
 }
 
 func GetUserInfo(c *gin.Context) {
-	// Obtener el ID del usuario desde el contexto (donde se estableció en RequireAuth)
-	user, _ := c.Get("user")
-	if user == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
-	// Obtener el ID del usuario
 	userID := user.(dao.User).ID
 
-	// Llamar al servicio para obtener la información del usuario
 	userInfo, err := services.CourseServiceInterfaceInstance.GetUserInfo(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		log.Printf("GetUserInfo error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user info"})
 		return
 	}
 
-	// Devolver la información del usuario en la respuesta
 	c.JSON(http.StatusOK, gin.H{"userInfo": userInfo})
 }

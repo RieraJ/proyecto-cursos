@@ -8,16 +8,17 @@ import (
 )
 
 func RequireAdmin(c *gin.Context) {
-	// Get the user from the context
-	user, _ := c.Get("user")
-
-	// Check if the user is an admin
-	if user.(dao.User).UserType != "admin" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Don't have permissions to access this resource"})
-		c.AbortWithStatus(http.StatusUnauthorized)
+	user, exists := c.Get("user")
+	if !exists {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
-	// Continue if admin
+	currentUser, ok := user.(dao.User)
+	if !ok || currentUser.UserType != "admin" {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
+		return
+	}
+
 	c.Next()
 }

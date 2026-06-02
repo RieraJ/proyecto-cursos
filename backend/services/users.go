@@ -5,6 +5,7 @@ import (
 	"backend/dao"
 	"backend/dto"
 	"errors"
+	"net/mail"
 	"os"
 	"time"
 
@@ -18,6 +19,7 @@ type userServiceInterface interface {
 	Signup(SignUp dto.SignUpRequest) error
 	Login(LoginRequest dto.User) (string, error)
 	UpdateUserType(userID uint, userType string) error
+	UpdateUser(userID uint, req dto.UpdateUserRequest) error
 	EnrollUser(EnrollUser dto.InscriptionRequest) error
 	GetAllUsers() ([]dto.User, error)
 	IsAdmin(userID uint) (bool, error)
@@ -25,27 +27,29 @@ type userServiceInterface interface {
 
 var (
 	UserServiceInterfaceInstance userServiceInterface
+	jwtSecret                    []byte
 )
 
 func init() {
 	UserServiceInterfaceInstance = &userService{}
+	jwtSecret = []byte(os.Getenv("SECRET"))
 }
 
-// Métodos de signup
 func (s *userService) Signup(signUp dto.SignUpRequest) error {
-	// Verificar si el usuario ya existe
+	if err := validateSignupInput(signUp); err != nil {
+		return err
+	}
+
 	_, err := clients.SelectUserByEmail(signUp.Email)
 	if err == nil {
 		return errors.New("user already exists")
 	}
 
-	// Hash de la contraseña
 	hashedPassword, err := hashPassword(signUp.Password)
 	if err != nil {
 		return err
 	}
 
-	// Crear un nuevo usuario
 	newUser := &dao.User{
 		Email:    signUp.Email,
 		Password: hashedPassword,
@@ -54,60 +58,79 @@ func (s *userService) Signup(signUp dto.SignUpRequest) error {
 		UserType: "student",
 	}
 
-	// Guardar el usuario en la base de datos
-	if err := clients.CreateUser(newUser); err != nil {
-		return err
-	}
-
-	return nil
+	return clients.CreateUser(newUser)
 }
 
-// Métodos de login
 func (s *userService) Login(User dto.User) (string, error) {
-	client := dao.User{
-		Email:    User.Email,
-		Password: User.Password,
-	}
-
-	// Verify if user exists
 	userDAO, err := clients.SelectUserByEmail(User.Email)
 	if err != nil {
-		return client.Email, errors.New("invalid email or password")
+		return "", errors.New("invalid email or password")
 	}
 
-	// Compare sent in pass with saved user pass hash
-	err = bcrypt.CompareHashAndPassword([]byte(userDAO.Password), []byte(client.Password))
-	if err != nil {
-		return client.Password, errors.New("invalid email or password")
+	if err := bcrypt.CompareHashAndPassword([]byte(userDAO.Password), []byte(User.Password)); err != nil {
+		return "", errors.New("invalid email or password")
 	}
 
-	// Generate a jwt token
 	tokenString, err := generateJWT(userDAO.Email, userDAO.ID)
 	if err != nil {
-		return " ", errors.New("error generating token")
+		return "", errors.New("error generating token")
 	}
 
 	return tokenString, nil
 }
 
-// Métodos de actualización
 func (s *userService) UpdateUserType(userID uint, userType string) error {
-	// Validar el nuevo tipo de usuario (opcional, si tienes valores predefinidos como "admin", "student")
 	validUserTypes := map[string]bool{"admin": true, "student": true}
 	if !validUserTypes[userType] {
 		return errors.New("invalid user type")
 	}
 
-	// Llamar al cliente para actualizar el userType
-	err := clients.UpdateUserType(userID, userType)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return clients.UpdateUserType(userID, userType)
 }
 
-// Métodos de administrador
+func (s *userService) UpdateUser(userID uint, req dto.UpdateUserRequest) error {
+	updates := map[string]interface{}{}
+
+	if req.Name != "" {
+		if len(req.Name) > 100 {
+			return errors.New("name exceeds maximum length")
+		}
+		updates["name"] = req.Name
+	}
+	if req.Surname != "" {
+		if len(req.Surname) > 100 {
+			return errors.New("surname exceeds maximum length")
+		}
+		updates["surname"] = req.Surname
+	}
+	if req.Email != "" {
+		if _, err := mail.ParseAddress(req.Email); err != nil {
+			return errors.New("invalid email format")
+		}
+		existing, err := clients.SelectUserByEmail(req.Email)
+		if err == nil && existing.ID != userID {
+			return errors.New("email already in use")
+		}
+		updates["email"] = req.Email
+	}
+	if req.Password != "" {
+		if len(req.Password) < 8 {
+			return errors.New("password must be at least 8 characters")
+		}
+		hashed, err := hashPassword(req.Password)
+		if err != nil {
+			return err
+		}
+		updates["password"] = hashed
+	}
+
+	if len(updates) == 0 {
+		return nil
+	}
+
+	return clients.UpdateUser(userID, updates)
+}
+
 func (s *userService) IsAdmin(userID uint) (bool, error) {
 	user, err := clients.SelectUserbyID(userID)
 	if err != nil {
@@ -116,6 +139,7 @@ func (s *userService) IsAdmin(userID uint) (bool, error) {
 
 	return user.UserType == "admin", nil
 }
+
 func (s *userService) GetAllUsers() ([]dto.User, error) {
 	users, err := clients.GetAllUsers()
 	if err != nil {
@@ -136,21 +160,17 @@ func (s *userService) GetAllUsers() ([]dto.User, error) {
 	return usersDTO, nil
 }
 
-// Métodos de inscripción
 func (s *userService) EnrollUser(enrollUser dto.InscriptionRequest) error {
-	// Verify if user exists
 	_, err := clients.SelectUserbyID(enrollUser.UserID)
 	if err != nil {
 		return err
 	}
 
-	// Verify if course exists
 	_, err = clients.ObtainCourseByID(enrollUser.CourseID)
 	if err != nil {
 		return err
 	}
 
-	// Verify if user is already enrolled
 	inscription, err := clients.GetUserInscription(enrollUser.UserID, enrollUser.CourseID)
 	if err != nil {
 		return err
@@ -159,15 +179,25 @@ func (s *userService) EnrollUser(enrollUser dto.InscriptionRequest) error {
 		return errors.New("user is already enrolled in this course")
 	}
 
-	// Enroll user
-	err = clients.EnrollUser(dao.CourseInscription{
+	return clients.EnrollUser(dao.CourseInscription{
 		UserID:   enrollUser.UserID,
 		CourseID: enrollUser.CourseID,
 	})
-	if err != nil {
-		return err
-	}
+}
 
+func validateSignupInput(signUp dto.SignUpRequest) error {
+	if signUp.Name == "" || len(signUp.Name) > 100 {
+		return errors.New("name is required and must be under 100 characters")
+	}
+	if signUp.Surname == "" || len(signUp.Surname) > 100 {
+		return errors.New("surname is required and must be under 100 characters")
+	}
+	if _, err := mail.ParseAddress(signUp.Email); err != nil {
+		return errors.New("invalid email format")
+	}
+	if len(signUp.Password) < 8 {
+		return errors.New("password must be at least 8 characters")
+	}
 	return nil
 }
 
@@ -177,17 +207,11 @@ func hashPassword(password string) (string, error) {
 }
 
 func generateJWT(email string, userId uint) (string, error) {
-	// Generate a jwt token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub":    email,
 		"userId": userId,
 		"exp":    time.Now().Add(time.Hour * 24 * 30).Unix(),
 	})
 
-	tokenString, err := token.SignedString([]byte(os.Getenv("SECRET")))
-	if err != nil {
-		return "", err
-	}
-
-	return tokenString, nil
+	return token.SignedString(jwtSecret)
 }

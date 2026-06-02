@@ -6,59 +6,53 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
 
+var jwtSecret []byte
+
+func init() {
+	jwtSecret = []byte(os.Getenv("SECRET"))
+}
+
 func RequireAuth(c *gin.Context) {
-	// Get the cookie off request
-	tokenString, err := c.Cookie("Auth")
+	tokenString, err := c.Cookie("token")
 	if err != nil || tokenString == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "No Auth cookie"})
-		c.AbortWithStatus(http.StatusUnauthorized)
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
-	// Decode and validate the cookie
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte(os.Getenv("SECRET")), nil
+		return jwtSecret, nil
 	})
-
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
-		c.AbortWithStatus(http.StatusUnauthorized)
+	if err != nil || !token.Valid {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 		return
 	}
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		// Check the expiration
-		if float64(claims["exp"].(float64)) < float64(time.Now().Unix()) {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token expired"})
-			c.AbortWithStatus(http.StatusUnauthorized)
-			return
-		}
-
-		// Find the user with the token sub (email)
-		var user dao.User
-		if err := clients.DB.Where("email = ?", claims["sub"]).First(&user).Error; err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
-			c.AbortWithStatus(http.StatusUnauthorized)
-			return
-		}
-
-		// Attach to request context for later use
-		c.Set("user", user)
-
-		// Continue
-		c.Next()
-	} else {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid claims"})
-		c.AbortWithStatus(http.StatusUnauthorized)
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
 		return
 	}
+
+	sub, ok := claims["sub"].(string)
+	if !ok || sub == "" {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token subject"})
+		return
+	}
+
+	var user dao.User
+	if err := clients.DB.Where("email = ?", sub).First(&user).Error; err != nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	c.Set("user", user)
+	c.Next()
 }

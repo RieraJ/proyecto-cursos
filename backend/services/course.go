@@ -47,6 +47,7 @@ func (s *courseService) CreateCourse(course dto.Course) (dto.Course, error) {
 		Length:       course.Length,
 		Requirements: course.Requirements,
 		Categories:   categories,
+		Image:        course.Image,
 	}
 
 	// Verificar si el curso ya existe
@@ -92,6 +93,9 @@ func (s *courseService) UpdateCourseByID(id uint, course dto.Course) (dto.Course
 	if course.Active {
 		courseDB.Active = course.Active
 	}
+	if course.Image != "" {
+		courseDB.Image = course.Image
+	}
 
 	// Actualizar categorías si se proporcionaron
 	if len(course.Categories) > 0 {
@@ -130,6 +134,7 @@ func (s *courseService) UpdateCourseByID(id uint, course dto.Course) (dto.Course
 		Length:       courseDB.Length,
 		Requirements: courseDB.Requirements,
 		Categories:   updatedCategoriesDTO,
+		Image:        courseDB.Image,
 	}, nil
 }
 
@@ -178,6 +183,7 @@ func (s *courseService) GetUserCourses(userID uint) ([]dto.Course, error) {
 			Length:       course.Length,
 			Requirements: course.Requirements,
 			Categories:   categoriesDTO,
+			Image:        course.Image,
 		})
 	}
 
@@ -216,6 +222,7 @@ func (s *courseService) SearchCourses(query string) ([]dto.Course, error) {
 			Length:       course.Length,
 			Requirements: course.Requirements,
 			Categories:   categoriesDTO,
+			Image:        course.Image,
 		})
 	}
 
@@ -262,6 +269,7 @@ func (s *courseService) GetAllCourses() ([]dto.Course, error) {
 			Length:       course.Length,
 			Requirements: course.Requirements,
 			Categories:   categoriesDTO,
+			Image:        course.Image,
 		})
 	}
 
@@ -278,5 +286,8 @@ func (s *courseService) GetUserInfo(id uint) (dto.UserInfo, error) {
 		ID:       user.ID,
 		Email:    user.Email,
 		UserType: user.UserType,
+		Name:     user.Name,
+		Surname:  user.Surname,
+		Image:    user.Image,
 	}, nil
 }

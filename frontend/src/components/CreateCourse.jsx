@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 import './CreateCourse.css';
-
-// const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:4000";
+import { API_URL } from '../config';
+import { isValidLength, validateImageFile } from '../utils';
 
 const CreateCourse = () => {
     const navigate = useNavigate();
@@ -13,8 +14,11 @@ const CreateCourse = () => {
     const [length, setLength] = useState('');
     const [requirements, setRequirements] = useState('');
     const [categories, setCategories] = useState([{ name: '' }]);
+    const [imageFile, setImageFile] = useState(null);
+    const [imagePreview, setImagePreview] = useState(null);
     const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
+    const [loading, setLoading] = useState(false);
+    const imagePreviewUrlRef = useRef(null);
 
     const handleAddCategory = () => {
         setCategories([...categories, { name: '' }]);
@@ -31,179 +35,235 @@ const CreateCourse = () => {
         setCategories(newCategories);
     };
 
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const validationError = validateImageFile(file);
+        if (validationError) {
+            Swal.fire({ icon: 'error', title: 'Imagen inválida', text: validationError });
+            e.target.value = '';
+            return;
+        }
+        if (imagePreviewUrlRef.current) URL.revokeObjectURL(imagePreviewUrlRef.current);
+        const url = URL.createObjectURL(file);
+        imagePreviewUrlRef.current = url;
+        setImageFile(file);
+        setImagePreview(url);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        setSuccess('');
 
-        // Basic validation
         if (!courseName || !description || !price || !instructor || !length) {
-            setError('Please fill in all required fields');
+            setError('Por favor completá todos los campos requeridos');
+            return;
+        }
+        if (parseFloat(price) < 0) {
+            setError('El precio no puede ser negativo');
+            return;
+        }
+        if (!isValidLength(length)) {
+            setError('La duración debe tener el formato HH:MM:SS (ej: 02:30:00)');
             return;
         }
 
-        // Validate categories
         const validCategories = categories.filter(cat => cat.name.trim() !== '');
         if (validCategories.length === 0) {
-            setError('Please add at least one category');
+            setError('Agregá al menos una categoría');
             return;
         }
 
-        const courseData = {
-            name: courseName,
-            description,
-            price: parseFloat(price),
-            active: true,
-            instructor,
-            length,
-            requirements,
-            categories: validCategories
-        };
+        setLoading(true);
+        const formData = new FormData();
+        formData.append('name', courseName);
+        formData.append('description', description);
+        formData.append('price', price);
+        formData.append('instructor', instructor);
+        formData.append('length', length);
+        formData.append('requirements', requirements);
+        formData.append('active', 'true');
+        formData.append('categories', JSON.stringify(validCategories));
+        if (imageFile) {
+            formData.append('image', imageFile);
+        }
 
         try {
-            const response = await fetch(`http://localhost:4000/courses`, {
+            const response = await fetch(`${API_URL}/courses`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
                 credentials: 'include',
-                body: JSON.stringify(courseData)
+                body: formData,
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                setSuccess('Course created successfully!');
-                // Reset form
-                setCourseName('');
-                setDescription('');
-                setPrice('');
-                setInstructor('');
-                setLength('');
-                setRequirements('');
-                setCategories([{ name: '' }]);
-                
                 navigate('/courses');
             } else {
-                setError(data.error || 'Failed to create course');
+                setError(data.error || 'Error al crear el curso');
             }
         } catch (err) {
-            console.error('Error creating course:', err);
-            setError('Network error. Please try again.');
+            setError('Error de red. Intentá de nuevo.');
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
         <div className="create-course-container">
-            {error && <p className="error-message">{error}</p>}
-            {success && <p className="success-message">{success}</p>}
-            <form onSubmit={handleSubmit} className="create-course-form">
-                <div className="form-group">
-                    <label htmlFor="courseName">Course Name</label>
-                    <input
-                        type="text"
-                        id="courseName"
-                        value={courseName}
-                        onChange={(e) => setCourseName(e.target.value)}
-                        placeholder="Enter course name"
-                        required
-                    />
+            <div className="create-course-card">
+                <div className="create-course-header">
+                    <h1>Crear Nuevo Curso</h1>
+                    <p>Completá los datos para publicar tu curso</p>
                 </div>
 
-                <div className="form-group">
-                    <label htmlFor="description">Description</label>
-                    <textarea
-                        id="description"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Enter course description"
-                        required
-                    />
-                </div>
+                {error && <div className="form-error">{error}</div>}
 
-                <div className="form-group">
-                    <label htmlFor="price">Price ($)</label>
-                    <input
-                        type="number"
-                        id="price"
-                        value={price}
-                        onChange={(e) => setPrice(e.target.value)}
-                        placeholder="Enter course price"
-                        min="0"
-                        step="0.01"
-                        required
-                    />
-                </div>
+                <form onSubmit={handleSubmit} className="create-course-form">
+                    <div className="form-group full-width">
+                        <label htmlFor="courseName">
+                            Nombre del Curso <span className="required">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="courseName"
+                            value={courseName}
+                            onChange={(e) => setCourseName(e.target.value)}
+                            placeholder="Ej: Introducción a Python"
+                            required
+                        />
+                    </div>
 
-                <div className="form-group">
-                    <label htmlFor="instructor">Instructor</label>
-                    <input
-                        type="text"
-                        id="instructor"
-                        value={instructor}
-                        onChange={(e) => setInstructor(e.target.value)}
-                        placeholder="Enter instructor name"
-                        required
-                    />
-                </div>
+                    <div className="form-group full-width">
+                        <label htmlFor="description">
+                            Descripción <span className="required">*</span>
+                        </label>
+                        <textarea
+                            id="description"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder="Describí el contenido y objetivos del curso"
+                            rows={4}
+                            required
+                        />
+                    </div>
 
-                <div className="form-group">
-                    <label htmlFor="length">Course Length (HH:MM:SS)</label>
-                    <input
-                        type="text"
-                        id="length"
-                        value={length}
-                        onChange={(e) => setLength(e.target.value)}
-                        placeholder="Enter course length (e.g., 02:30:00)"
-                        pattern="\d{2}:\d{2}:\d{2}"
-                        required
-                    />
-                </div>
-
-                <div className="form-group">
-                    <label htmlFor="requirements">Requirements</label>
-                    <textarea
-                        id="requirements"
-                        value={requirements}
-                        onChange={(e) => setRequirements(e.target.value)}
-                        placeholder="Enter course requirements"
-                    />
-                </div>
-
-                <div className="form-group">
-                    <label>Categories</label>
-                    {categories.map((category, index) => (
-                        <div key={index} className="category-input">
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label htmlFor="price">
+                                Precio (USD) <span className="required">*</span>
+                            </label>
+                            <input
+                                type="number"
+                                id="price"
+                                value={price}
+                                onChange={(e) => setPrice(e.target.value)}
+                                placeholder="0.00"
+                                min="0"
+                                step="0.01"
+                                required
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="instructor">
+                                Instructor <span className="required">*</span>
+                            </label>
                             <input
                                 type="text"
-                                value={category.name}
-                                onChange={(e) => handleCategoryChange(index, e.target.value)}
-                                placeholder="Enter category"
+                                id="instructor"
+                                value={instructor}
+                                onChange={(e) => setInstructor(e.target.value)}
+                                placeholder="Nombre del instructor"
+                                required
                             />
-                            {categories.length > 1 && (
-                                <button 
-                                    type="button" 
-                                    onClick={() => handleRemoveCategory(index)}
-                                    className="remove-category-btn"
-                                >
-                                    Remove
-                                </button>
-                            )}
                         </div>
-                    ))}
-                    <button 
-                        type="button" 
-                        onClick={handleAddCategory}
-                        className="add-category-btn"
-                    >
-                        Add Category
-                    </button>
-                </div>
+                    </div>
 
-                <button type="submit" className="submit-course-btn">
-                    Create Course
-                </button>
-            </form>
+                    <div className="form-group full-width">
+                        <label htmlFor="length">
+                            Duración (HH:MM:SS) <span className="required">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="length"
+                            value={length}
+                            onChange={(e) => setLength(e.target.value)}
+                            placeholder="02:30:00"
+                            pattern="\d{2}:\d{2}:\d{2}"
+                            required
+                        />
+                    </div>
+
+                    <div className="form-group full-width">
+                        <label htmlFor="requirements">Requisitos</label>
+                        <textarea
+                            id="requirements"
+                            value={requirements}
+                            onChange={(e) => setRequirements(e.target.value)}
+                            placeholder="Conocimientos previos necesarios (opcional)"
+                            rows={3}
+                        />
+                    </div>
+
+                    <div className="form-group full-width">
+                        <label>Imagen del Curso</label>
+                        <label htmlFor="courseImage" className="image-upload-label">
+                            {imagePreview ? (
+                                <img src={imagePreview} alt="Preview" className="image-preview" />
+                            ) : (
+                                <div className="image-upload-placeholder">
+                                    <span className="upload-icon">📷</span>
+                                    <span>Hacé clic para seleccionar una imagen</span>
+                                </div>
+                            )}
+                        </label>
+                        <input
+                            type="file"
+                            id="courseImage"
+                            accept="image/*"
+                            onChange={handleImageChange}
+                            className="image-input-hidden"
+                        />
+                    </div>
+
+                    <div className="form-group full-width categories-section">
+                        <label>Categorías <span className="required">*</span></label>
+                        <div className="categories-list">
+                            {categories.map((category, index) => (
+                                <div key={index} className="category-input">
+                                    <input
+                                        type="text"
+                                        value={category.name}
+                                        onChange={(e) => handleCategoryChange(index, e.target.value)}
+                                        placeholder={`Categoría ${index + 1}`}
+                                    />
+                                    {categories.length > 1 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveCategory(index)}
+                                            className="remove-category-btn"
+                                            aria-label="Eliminar categoría"
+                                        >
+                                            ✕
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                        <button
+                            type="button"
+                            onClick={handleAddCategory}
+                            className="add-category-btn"
+                        >
+                            + Agregar Categoría
+                        </button>
+                    </div>
+
+                    <button type="submit" className="submit-course-btn" disabled={loading}>
+                        {loading ? 'Publicando...' : 'Publicar Curso'}
+                    </button>
+                </form>
+            </div>
         </div>
     );
 };

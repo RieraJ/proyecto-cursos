@@ -1,18 +1,29 @@
 package comments
 
 import (
+	"backend/dao"
 	"backend/dto"
 	"backend/services"
 	"encoding/base64"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
+const maxCommentContentLen = 2000
+const maxImageBytes = 5 << 20 // 5 MB
+
 func CreateComment(c *gin.Context) {
-	userIDStr := c.PostForm("user_id")
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	currentUser := user.(dao.User)
+
 	courseIDStr := c.PostForm("course_id")
 	content := c.PostForm("content")
 
@@ -21,34 +32,41 @@ func CreateComment(c *gin.Context) {
 		return
 	}
 
-	// Leer userID y courseID como uint
-	userID, _ := strconv.ParseUint(userIDStr, 10, 64)
+	if len(content) > maxCommentContentLen {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Content exceeds maximum length"})
+		return
+	}
 
-	courseID, _ := strconv.ParseUint(courseIDStr, 10, 64)
+	courseID, err := strconv.ParseUint(courseIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid course ID"})
+		return
+	}
 
-	// Procesar la imagen si existe
 	var imageBase64 string
 	file, err := c.FormFile("image")
 	if err == nil {
+		if file.Size > maxImageBytes {
+			c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "Image exceeds 5 MB limit"})
+			return
+		}
 		openedFile, err := file.Open()
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error opening file"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error processing image"})
 			return
 		}
 		defer openedFile.Close()
 
-		imageData, err := io.ReadAll(openedFile)
+		imageData, err := io.ReadAll(io.LimitReader(openedFile, maxImageBytes))
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error reading file"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error processing image"})
 			return
 		}
-
 		imageBase64 = base64.StdEncoding.EncodeToString(imageData)
 	}
 
-	// Crear el comentario usando el servicio
 	body := dto.CommentRequest{
-		UserID:   uint(userID),
+		UserID:   currentUser.ID,
 		CourseID: uint(courseID),
 		Content:  content,
 		Image:    imageBase64,
@@ -56,7 +74,8 @@ func CreateComment(c *gin.Context) {
 
 	result, err := services.CommentServiceInterfaceInstance.CreateComment(body)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		log.Printf("CreateComment error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create comment"})
 		return
 	}
 
@@ -64,49 +83,80 @@ func CreateComment(c *gin.Context) {
 }
 
 func DeleteCommentByID(c *gin.Context) {
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	currentUser := user.(dao.User)
+
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(400, gin.H{"error": "Invalid comment ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid comment ID"})
 		return
 	}
 
-	err = services.CommentServiceInterfaceInstance.DeleteCommentByID(uint(id))
+	isAdmin := currentUser.UserType == "admin"
+	err = services.CommentServiceInterfaceInstance.DeleteCommentByID(uint(id), currentUser.ID, isAdmin)
 	if err != nil {
-		c.JSON(401, gin.H{"error": err.Error()})
+		if err.Error() == "forbidden" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
+			return
+		}
+		if err.Error() == "comment not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Comment not found"})
+			return
+		}
+		log.Printf("DeleteCommentByID error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete comment"})
 		return
 	}
 
-	c.JSON(200, gin.H{"message": "Comment deleted successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Comment deleted successfully"})
 }
 
 func GetUserComments(c *gin.Context) {
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	currentUser := user.(dao.User)
+
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(400, gin.H{"error": "Invalid user ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	if uint(id) != currentUser.ID && currentUser.UserType != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
 		return
 	}
 
 	comments, err := services.CommentServiceInterfaceInstance.GetUserComments(uint(id))
 	if err != nil {
-		c.JSON(401, gin.H{"error": err.Error()})
+		log.Printf("GetUserComments error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve comments"})
 		return
 	}
 
-	c.JSON(200, comments)
+	c.JSON(http.StatusOK, comments)
 }
 
 func GetCourseComments(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(400, gin.H{"error": "Invalid course ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid course ID"})
 		return
 	}
 
 	comments, err := services.CommentServiceInterfaceInstance.GetCourseComments(uint(id))
 	if err != nil {
-		c.JSON(401, gin.H{"error": err.Error()})
+		log.Printf("GetCourseComments error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve comments"})
 		return
 	}
 
-	c.JSON(200, comments)
+	c.JSON(http.StatusOK, comments)
 }

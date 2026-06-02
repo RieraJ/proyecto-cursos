@@ -1,77 +1,245 @@
-.course-comments-container {
-    max-width: 800px;
+/* CourseComments.css */
+
+.comments-page {
+    max-width: 780px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 0 20px 60px;
+}
+
+.comments-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 32px 0 24px;
+    border-bottom: 2px solid var(--color-border);
+    margin-bottom: 28px;
+}
+
+.comments-header-icon {
+    font-size: 2.2rem;
+    color: var(--color-primary);
+    flex-shrink: 0;
+}
+
+.comments-header h2 {
+    margin: 0 0 4px;
+    font-size: 1.6rem;
+    color: var(--color-text);
+}
+
+.comments-header p {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+}
+
+.comments-body {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Formulario */
+.comment-form-card {
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 24px;
+    border: 1px solid var(--color-border);
+}
+
+.comment-form-card h3 {
+    margin: 0 0 16px;
+    font-size: 1rem;
+    color: var(--color-text);
+    font-weight: 600;
 }
 
 .comment-form {
     display: flex;
     flex-direction: column;
-    margin-bottom: 20px;
+    gap: 12px;
 }
 
-.comment-form textarea {
-    margin-bottom: 10px;
-    padding: 10px;
-    min-height: 100px;
+.textarea-wrapper {
+    position: relative;
 }
 
-.comment-form button {
-    align-self: flex-start;
-    padding: 10px 20px;
-    background-color: #3700ff;
-    color: white;
-    border: none;
-    border-radius: 5px;
+.textarea-wrapper textarea {
+    width: 100%;
+    padding: 14px;
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
+    color: var(--color-text);
+    resize: vertical;
+    min-height: 110px;
+    outline: none;
+    transition: border-color var(--transition), box-shadow var(--transition);
+    box-sizing: border-box;
+    font-family: inherit;
+    background: var(--color-surface);
+}
+
+.textarea-wrapper textarea:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-subtle);
+}
+
+.char-count {
+    position: absolute;
+    bottom: 10px;
+    right: 12px;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    pointer-events: none;
+}
+
+.char-count--warn {
+    color: var(--color-danger);
+    font-weight: 600;
+}
+
+.form-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.image-upload-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 16px;
+    border: 1.5px dashed var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-secondary);
+    font-size: 0.88rem;
     cursor: pointer;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: border-color var(--transition), color var(--transition);
+    background: none;
+    font-family: inherit;
 }
 
+.image-upload-btn:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.hidden-file-input {
+    display: none;
+}
+
+.post-comment-btn {
+    margin-left: auto;
+    background: var(--color-primary);
+    color: #fff;
+    border: none;
+    padding: 10px 28px;
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--transition);
+    font-family: inherit;
+}
+
+.post-comment-btn:hover {
+    background: var(--color-primary-dark);
+}
+
+/* Lista de comentarios */
 .comments-list {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 14px;
 }
 
 .comment-card {
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 15px;
-    background-color: #f9f9f9;
+    display: flex;
+    gap: 14px;
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-border);
+    padding: 18px;
+}
+
+.comment-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary-light));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 1rem;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.comment-avatar-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
+}
+
+.comment-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.comment-text {
+    margin: 0 0 10px;
+    color: var(--color-text);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    word-break: break-word;
 }
 
 .comment-image {
-    max-width: 200px;
-    margin-top: 10px;
+    max-width: 100%;
+    max-height: 260px;
+    border-radius: var(--radius-md);
+    object-fit: contain;
+    display: block;
 }
 
-.delete-comment-button {
-    background: none;
-    border: none;
-    color: #ff4444;
-    cursor: pointer;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-  }
-  
-  .delete-comment-button:hover {
-    color: #ff0000;
-  }
-  
-
-.pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 15px;
-    margin-top: 20px;
-}
-
-.no-comments-message {
+/* Estado vacío */
+.empty-comments {
     text-align: center;
-    color: #888;
-    font-style: italic;
-    margin-top: 20px;
+    padding: 52px 20px;
+    color: var(--color-text-muted);
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-sm);
+}
+
+.empty-icon {
+    font-size: 2.8rem;
+    margin-bottom: 14px;
+    display: block;
+    color: var(--color-border);
+}
+
+.empty-comments p {
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+.error-message {
+    color: var(--color-danger);
+    background: var(--color-danger-subtle);
+    border-left: 4px solid var(--color-danger);
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
 }
